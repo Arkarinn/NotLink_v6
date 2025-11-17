@@ -310,7 +310,7 @@ static void dwc2_set_txfifo(uint8_t busid, uint8_t fifo, uint16_t size)
         USB_OTG_GLB->DIEPTXF[fifo - 1U] = ((uint32_t)size << 16) | tx_offset;
     }
 
-    ulog_info("fifo%d size:%04x, offset:%04x", fifo, size, tx_offset);
+    ulog_debug("fifo%d size:%04x, offset:%04x", fifo, size, tx_offset);
 }
 
 static uint8_t dwc2_get_devspeed(uint8_t busid)
@@ -518,7 +518,7 @@ int usb_dc_init(uint8_t busid)
         g_dwc2_udc[busid].user_params.total_fifo_size = g_dwc2_udc[busid].hw_params.total_fifo_size;
     }
 
-    ulog_info("dwc2 has %d endpoints and dfifo depth(32-bit words) is %d",
+    ulog_debug("dwc2 has %d endpoints and dfifo depth(32-bit words) is %d",
                  g_dwc2_udc[busid].hw_params.num_dev_ep + 1,
                  g_dwc2_udc[busid].user_params.total_fifo_size);
 

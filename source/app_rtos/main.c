@@ -9,6 +9,8 @@
 #include "thread_dap.h"
 #include "thread_usbd.h"
 
+#include "config.h"
+
 #define THREAD_USBD_PRIO 3
 static TX_THREAD thread_usbd;
 #define THREAD_USBD_STACK_SIZE (1024U * 8)
@@ -19,10 +21,15 @@ static TX_THREAD thread_dap;
 #define THREAD_DAP_STACK_SIZE (1024U * 8)
 uint32_t thread_dap_stack[THREAD_DAP_STACK_SIZE / 4];
 
-
 int main(void)
 {
     board_init();
+
+    ulog_init(ULOG_LEVEL_INFO);
+    ulog_info("App running");
+    ulog_info("Build time: %s", CONFIG_BUILD_TIME);
+    ulog_info("Build type: %s", CONFIG_BUILD_TYPE);
+
     tx_kernel_enter(); // 永远不再返回
     return 0;
 }

@@ -152,10 +152,10 @@
 #define JTAG_RESET_IN() ((LL_GPIO_ReadInputPort(JTAG_RESET_GPIO_Port) & JTAG_RESET_Pin) != 0)
 #define JTAG_DBGRQ_IN() ((LL_GPIO_ReadInputPort(JTAG_DBGRQ_RXD_GPIO_Port) & JTAG_DBGRQ_RXD_Pin) != 0)
 
-#define JTAG_REG_OPTIMIZE (1)                 // 寄存器优化
+#define JTAG_REG_OPTIMIZE (1U)                // 寄存器优化
 #define JTAG_SPI_FIFO_SIZE (16U)              // SPI FIFO 深度
 #define JTAG_SWJ_FREQ_MAX (60 * 1000 * 1000U) // 最大频率
-#define JTAG_SWJ_FREQ_MIN (5 * 1000)          // 最小频率
+#define JTAG_SWJ_FREQ_MIN (5 * 1000U)         // 最小频率
 #define JTAG_CLK_DUTY_CYCLE (1.0F / 2U)       // 占空比
 
 typedef enum _jtag_port_enum
@@ -191,6 +191,7 @@ void bsp_jtag_enable_vout(void);
 void bsp_jtag_disable_vout(void);
 uint32_t bsp_jtag_set_tck_clock(uint32_t freq);
 void bsp_jtag_generate_data_cycle(uint32_t count, uint32_t n_bytes);
+void bsp_jtag_wait_data_cycle(void);
 void bsp_jtag_generate_dummy_cycle(uint32_t count);
 void bsp_jtag_write_tms_tx_fifo(uint8_t *data_buff, uint32_t n_bytes);
 void bsp_jtag_write_tms_tx_fifo_byte(uint8_t *data_buff);

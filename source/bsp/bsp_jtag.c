@@ -657,6 +657,17 @@ __INLINE void bsp_jtag_generate_data_cycle(uint32_t count, uint32_t n_bytes)
 }
 
 /**
+ * @brief 等待定时器运行结束
+ *
+ */
+void bsp_jtag_wait_data_cycle(void)
+{
+    while (LL_TIM_IsEnabledCounter(TIM8))
+    {
+    }
+}
+
+/**
  * @brief 生成空周期
  *
  * @param count Must be less than 65535
@@ -966,8 +977,8 @@ void bsp_jtag_check_gpio_mode(uint32_t mode)
             LL_GPIO_SetPinMode(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_MODE_INPUT);  // 切回IO功能
             LL_GPIO_SetPinMode(JTAG_TDI_GPIO_Port, JTAG_TDI_Pin, LL_GPIO_MODE_OUTPUT);       // 切回IO功能
             LL_GPIO_SetPinMode(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_MODE_INPUT);        // 切回IO功能
-            break;
 
+            break;
         default:
             break;
         }
@@ -981,6 +992,7 @@ void bsp_jtag_check_gpio_mode(uint32_t mode)
             LL_GPIO_SetPinMode(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_MODE_ALTERNATE); // 切回AF功能
             LL_GPIO_SetPinMode(JTAG_TMS_DO_GPIO_Port, JTAG_TMS_DO_Pin, LL_GPIO_MODE_ALTERNATE);   // 切回AF功能
             LL_GPIO_SetPinMode(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_MODE_ALTERNATE);   // 切回AF功能
+
             break;
         case JTAG_PORT_JTAG:
             LL_GPIO_SetPinMode(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_MODE_ALTERNATE); // 切回AF功能
@@ -988,8 +1000,8 @@ void bsp_jtag_check_gpio_mode(uint32_t mode)
             LL_GPIO_SetPinMode(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_MODE_ALTERNATE);   // 切回AF功能
             LL_GPIO_SetPinMode(JTAG_TDI_GPIO_Port, JTAG_TDI_Pin, LL_GPIO_MODE_ALTERNATE);         // 切回AF功能
             LL_GPIO_SetPinMode(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_MODE_ALTERNATE);         // 切回AF功能
-            break;
 
+            break;
         default:
             break;
         }

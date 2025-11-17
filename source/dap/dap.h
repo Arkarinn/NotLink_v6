@@ -323,7 +323,6 @@ extern "C"
     uint32_t DAP_ExecuteCommand(const uint8_t *request, uint8_t *response);
 
     void DAP_Setup(void);
-    void bsp_jtag_check_gpio_mode(uint32_t mode);
 
     uint8_t DAP_GetVendorString(char *str);
     uint8_t DAP_GetProductString(char *str);

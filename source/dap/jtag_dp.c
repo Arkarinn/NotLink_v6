@@ -32,7 +32,7 @@
 static uint8_t jtag_tx_buff[JTAG_SPI_FIFO_SIZE] = {0};
 static uint8_t jtag_rx_buff[JTAG_SPI_FIFO_SIZE] = {0};
 
-static const uint8_t ack_table[8] = {0, 2, 1, 3, 4, 6, 5, 7}; // JTAG的回复和SWD不一样，前两位交换
+static const uint8_t ack_remap_table[8] = {0, 2, 1, 3, 4, 6, 5, 7}; // JTAG的回复和SWD不一样，前两位交换
 
 extern dap_data_t dap_data;
 
@@ -47,8 +47,6 @@ extern dap_data_t dap_data;
  */
 void JTAG_Sequence(uint32_t info, const uint8_t *tdi, uint8_t *tdo)
 {
-    // ulog_info("jtag seq");
-
     uint32_t n_cycle, n_byte;
 
     bsp_jtag_check_gpio_mode(0U);
@@ -73,8 +71,6 @@ void JTAG_Sequence(uint32_t info, const uint8_t *tdi, uint8_t *tdo)
     LL_GPIO_SetPinMode(JTAG_TMS_DO_GPIO_Port, JTAG_TMS_DO_Pin, LL_GPIO_MODE_ALTERNATE); // 外设控制
     bsp_jtag_disable_transfer_tdi_tdo();
     bsp_jtag_disable_spi_tdi_tdo();
-
-    // ulog_info("jtag seq exit");
 }
 
 /**
@@ -84,8 +80,6 @@ void JTAG_Sequence(uint32_t info, const uint8_t *tdi, uint8_t *tdo)
  */
 uint32_t JTAG_ReadIDCode(void)
 {
-    // ulog_info("jtag idcode");
-
     uint8_t tms;
     uint8_t tdi;
 
@@ -167,8 +161,6 @@ uint32_t JTAG_ReadIDCode(void)
     bsp_jtag_disable_spi_tms();
     bsp_jtag_disable_spi_tdi_tdo();
 
-    // ulog_info("jtag idcode exit");
-
     return id_code;
 }
 
@@ -179,8 +171,6 @@ uint32_t JTAG_ReadIDCode(void)
  */
 void JTAG_WriteAbort(uint32_t data)
 {
-    // ulog_info("jtag abort");
-
     uint8_t tms;
     uint8_t tdi;
 
@@ -300,8 +290,6 @@ void JTAG_WriteAbort(uint32_t data)
 
     bsp_jtag_disable_spi_tms();
     bsp_jtag_disable_spi_tdi_tdo();
-
-    // ulog_info("jtag abort exit");
 }
 
 /**
@@ -311,8 +299,6 @@ void JTAG_WriteAbort(uint32_t data)
  */
 void JTAG_IR(uint32_t ir)
 {
-    // ulog_info("jtag ir");
-
     uint8_t tms;
     uint8_t tdi;
 
@@ -453,8 +439,6 @@ void JTAG_IR(uint32_t ir)
 
     bsp_jtag_disable_spi_tms();
     bsp_jtag_disable_spi_tdi_tdo();
-
-    // ulog_info("jtag ir exit");
 }
 
 /**
@@ -466,8 +450,6 @@ void JTAG_IR(uint32_t ir)
  */
 uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
 {
-    // ulog_info("jtag transfer");
-
     uint8_t ack;
     uint8_t tms;
     uint8_t tdi;
@@ -525,7 +507,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
     bsp_jtag_generate_data_cycle(3U, 1U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
     bsp_jtag_read_tdo_rx_fifo_byte(jtag_rx_buff + 1);
-    ack = ack_table[jtag_rx_buff[1] & 0x07]; // 通过映射表快速转换
+    ack = ack_remap_table[jtag_rx_buff[1] & 0x07]; // 通过映射表快速转换
 
     if (ack != DAP_TRANSFER_OK)
     {
@@ -715,8 +697,6 @@ idle_cycle:
 
     bsp_jtag_disable_spi_tms();
     bsp_jtag_disable_spi_tdi_tdo();
-
-    // ulog_info("jtag transfer exit");
 
     return ack;
 }

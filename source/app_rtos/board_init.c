@@ -7,7 +7,6 @@
 #include "stm32h7xx_ll_utils.h"
 
 #include "bsp.h"
-#include "config.h"
 #include "ulog.h"
 
 void sys_mpu_config(void);
@@ -26,9 +25,6 @@ void board_init(void)
     sys_clock_config();
 
     bsp_debug_init();
-    ulog_init(ULOG_LEVEL_ERROR);
-    ulog_info("App entry");
-
     bsp_tick_init();
     bsp_led_init();
     bsp_jtag_init();
@@ -37,9 +33,6 @@ void board_init(void)
     bsp_spi_init();
     bsp_crc_init();
     bsp_vcom_init();
-
-    ulog_info("Build time: %s", CONFIG_BUILD_TIME);
-    ulog_info("Build type: %s", CONFIG_BUILD_TYPE);
 }
 
 /**

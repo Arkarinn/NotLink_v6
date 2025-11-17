@@ -38,8 +38,6 @@ int main(void)
     sys_mpu_config();
 
     bsp_debug_init();
-    ulog_init(ULOG_LEVEL_INFO);
-    ulog_info("Boot entry");
 
     bsp_tick_init();
     bsp_led_init();
@@ -53,6 +51,9 @@ int main(void)
     w25_init();
     w25_read_byte(0); // 重置总线状态
 
+    ulog_init(ULOG_LEVEL_INFO);
+    ulog_info("Boot running");
+
     uint8_t c;
 
     // 清理缓冲区
@@ -60,25 +61,30 @@ int main(void)
     {
     }
 
-    ulog_warn("Press [Enter] to update APP");
+    ulog_warn("Press [Enter] to enter bootloader");
 
     uint32_t tick = bsp_tick_get_count();
+    uint32_t key_count = 0;
     while (1)
     {
-        if (bsp_debug_get_byte(&c) == 0)
+        if ((bsp_debug_get_byte(&c) == 0) && (c == 0x0D))
         {
-            if (c == 0x0D) // 回车
+            key_count++;
+            if (key_count > 3)
             {
+                // 进入boot
                 break;
             }
         }
 
-        bsp_tick_delay(20);
+        bsp_tick_delay(100);
         bsp_led_toggle(LED_RUNNING);
 
-        if (bsp_tick_get_count() - tick > 100)
+        // 超时处理
+        if (bsp_tick_get_count() - tick > 500)
         {
-            ulog_warn("Update timeout");
+            ulog_warn("Fw update timeout");
+            // 正常运行
             goto copy_app;
         }
     }
