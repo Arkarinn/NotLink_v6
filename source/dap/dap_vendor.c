@@ -55,6 +55,13 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response)
 
     switch (id)
     {
+#if (DAP_VENDOR_SPI != 0)
+
+#endif /* (DAP_VENDOR_SPI != 0) */
+
+#if (DAP_VENDOR_IIC != 0)
+
+#endif /* (DAP_VENDOR_IIC != 0) */
 
     default:
         *(response - 1) = ID_DAP_Invalid; // 无效ID

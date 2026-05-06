@@ -138,4 +138,8 @@ static const char TargetBoardName[] = TARGET_BOARD_NAME;
 #define DAP_PORDUCT_NAME "NotLink CMSIS-DAP"
 #endif
 
+#define DAP_VENDOR_SPI 1 /* SPI Mode: 1 = available, 0 = not available. */
+
+#define DAP_VENDOR_IIC 0 /* IIC Mode: 1 = available, 0 = not available. */
+
 #endif /* __DAP_CONFIG_H__ */

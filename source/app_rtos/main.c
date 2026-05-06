@@ -26,9 +26,10 @@ int main(void)
     board_init();
 
     ulog_init(ULOG_LEVEL_INFO);
-    ulog_info("App running");
-    ulog_info("Build time: %s", CONFIG_BUILD_TIME);
-    ulog_info("Build type: %s", CONFIG_BUILD_TYPE);
+    ulog_info("App running.");
+    ulog_info("Build time: %s.", CONFIG_BUILD_TIME);
+    ulog_info("Build type: %s.", CONFIG_BUILD_TYPE);
+    ulog_info("C compiler: %s %s.", CONFIG_C_COMPILER, CONFIG_C_COMPILER_VERSION);
 
     tx_kernel_enter(); // 永远不再返回
     return 0;

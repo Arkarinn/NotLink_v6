@@ -1,11 +1,14 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-// 编译选项
+// 编译时间
 #define CONFIG_BUILD_TIME (__DATE__ " " __TIME__)
 
-// 编译选项
+// 编译配置
 #define CONFIG_BUILD_TYPE "@CMAKE_BUILD_TYPE@"
+
+// 编译器
+#define CONFIG_C_COMPILER "@CMAKE_C_COMPILER_ID@"
 
 // 编译器版本
 #define CONFIG_C_COMPILER_VERSION "@CMAKE_C_COMPILER_VERSION@"
