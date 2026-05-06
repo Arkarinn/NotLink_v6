@@ -52,7 +52,7 @@ int main(void)
     w25_read_byte(0); // 重置总线状态
 
     ulog_init(ULOG_LEVEL_INFO);
-    ulog_info("Boot running");
+    ulog_info("Boot running.");
 
     uint8_t c;
 
@@ -61,7 +61,7 @@ int main(void)
     {
     }
 
-    ulog_warn("Press [Enter] to enter bootloader");
+    ulog_warn("Press [Enter] to update app.");
 
     uint32_t tick = bsp_tick_get_count();
     uint32_t key_count = 0;
@@ -83,7 +83,7 @@ int main(void)
         // 超时处理
         if (bsp_tick_get_count() - tick > 500)
         {
-            ulog_warn("Fw update timeout");
+            ulog_warn("Fw update timeout.");
             // 正常运行
             goto copy_app;
         }
@@ -92,11 +92,11 @@ int main(void)
     // 擦除app区域
     for (uint32_t i = 0; i < APP_SECTION_SIZE; i += (4 * 1024))
     {
-        ulog_warn("Erase sector: 0x%0X, size: %d", i, 4 * 1024);
+        ulog_warn("Erase sector: 0x%0X, size: %d.", i, 4 * 1024);
         w25_erase_sector_4k(i);
         bsp_led_toggle(LED_RUNNING);
     }
-    ulog_info("Erase done");
+    ulog_info("Erase done.");
     bsp_led_off(LED_RUNNING);
 
     // 清理缓冲区
@@ -104,16 +104,16 @@ int main(void)
     {
     }
 
-    ulog_info("Waiting for Xmodem transfer");
+    ulog_info("Waiting for Xmodem transfer.");
     int r = lwxm_loop(0x00000000);
 
     bsp_tick_delay(1000); // 等待上位机传输结束，防止吞字符
     if (r != 0)
     {
-        ulog_error("Update error");
+        ulog_error("Update error.");
         goto boot_error;
     }
-    ulog_info("Update done");
+    ulog_info("Update done.");
 
 copy_app:
 
@@ -121,22 +121,22 @@ copy_app:
     bsp_led_on(LED_CONNECT);
 
     uint32_t estack = w25_read_word(0);
-    ulog_info("App estack address: 0x%08X", estack);
+    ulog_info("App estack address: 0x%08X.", estack);
 
     if ((estack & 0x03) != 0) // 字节对齐
     {
-        ulog_error("Stack address error, boot failed");
+        ulog_error("Stack address error, boot failed.");
         goto boot_error;
     }
 
     bsp_led_on(LED_RUNNING);
-    ulog_info("Copy app section to: 0x%08X, size: 0x%08X (%d bytes)", //
+    ulog_info("Copy app section to: 0x%08X, size: 0x%08X (%d bytes).", //
               APP_SECTION_ADDR, APP_SECTION_SIZE, APP_SECTION_SIZE);
     CopyApp(D1_AXISRAM_BASE, APP_SECTION_SIZE); // 复制APP
-    ulog_info("Copy app section completed");
+    ulog_info("Copy app section completed.");
     bsp_led_off(LED_RUNNING);
 
-    ulog_info("Jump to app");
+    ulog_info("Jump to app.");
     bsp_debug_deinit();
     w25_deinit();
     bsp_tick_deinit();

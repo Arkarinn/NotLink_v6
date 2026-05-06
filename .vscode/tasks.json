@@ -17,11 +17,11 @@
 				"--uid",
 				"A429359E62920FDD1A1044C4414F8DEA"
 			],
-			"problemMatcher": [],
+			"problemMatcher": []
 		},
 		{
 			"type": "shell",
-			"label": "pyocd_load_flash_app_rtos",
+			"label": "pyocd_load_spi_app_rtos",
 			"command": "${workspaceFolder}\\.venv\\Scripts\\pyocd.exe",
 			"args": [
 				"load",
@@ -32,14 +32,14 @@
 				"--frequency",
 				"10M",
 				"--erase",
-				"chip", // 添加的内存区域必须全片擦除才能调用FLM算法
+				"chip",
 				"--base-address",
-				"0x90000000", // 为了避开RAM_D2地址，实际运行在0x24000000
-				"${workspaceFolder}/build/source/app_rtos/app_rtos.bin", // 避免地址不匹配
+				"0x90000000",
+				"${workspaceFolder}/build/source/app_rtos/app_rtos.bin",
 				"--uid",
 				"A429359E62920FDD1A1044C4414F8DEA"
 			],
-			"problemMatcher": [],
+			"problemMatcher": []
 		},
 		{
 			"type": "shell",
@@ -51,16 +51,13 @@
 				"STM32F103RC",
 				"--erase",
 				"chip",
-				// "sector",
 				"--frequency",
 				"10M",
-				// "--base-address",
-				// "0x08000000",
 				"${workspaceFolder}/dap_test_64k.hex",
 				"--uid",
-				"00017CDBDBEA",
+				"00017CDBDBEA"
 			],
-			"problemMatcher": [],
+			"problemMatcher": []
 		},
 		{
 			"type": "shell",
@@ -68,21 +65,23 @@
 			"command": "${workspaceFolder}\\.venv\\Scripts\\pyocd.exe",
 			"args": [
 				"load",
+				"-O",
+				"dap_protocol=jtag",
+				"--frequency",
+				"10000000",
 				"--target",
 				"STM32F103RC",
-				"--frequency",
-				"10M",
 				"--base-address",
 				"0x20000000",
 				"${workspaceFolder}/dap_test_64k.bin",
 				"--uid",
 				"00017CDBDBEA",
 			],
-			"problemMatcher": [],
+			"problemMatcher": []
 		},
 		{
 			"type": "shell",
-			"label": "probe-rs_load_bench_stm32f103",
+			"label": "probe-rs_bench_ram_stm32f103",
 			"command": "probe-rs",
 			"args": [
 				"benchmark",
@@ -97,13 +96,13 @@
 				"--probe",
 				"0d28:0204",
 				"--iterations",
-				"20",
+				"20"
 			],
-			"problemMatcher": [],
+			"problemMatcher": []
 		},
 		{
 			"type": "shell",
-			"label": "probe-rs_load_bench_stm32g431",
+			"label": "probe-rs_bench_ram_stm32g431",
 			"command": "probe-rs",
 			"args": [
 				"benchmark",
@@ -118,9 +117,9 @@
 				"--probe",
 				"0d28:0204",
 				"--iterations",
-				"20",
+				"20"
 			],
-			"problemMatcher": [],
+			"problemMatcher": []
 		},
 		{
 			"type": "shell",
@@ -128,13 +127,13 @@
 			"command": "${workspaceFolder}/toolchain/openocd/bin/openocd.exe",
 			"args": [
 				"-f",
-				"${workspaceFolder}/toolchain/openocd/share/openocd/scripts/interface/cmsis-dap.cfg",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/interface/cmsis-dap.cfg",
+				"-c",
+				"transport select jtag",
 				"-f",
-				"${workspaceFolder}/toolchain/openocd/share/openocd/scripts/target/stm32f1x.cfg",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/target/stm32f1x.cfg",
 				"-c",
-				"transport select swd",
-				"-c",
-				"adapter speed 10000",
+				"adapter speed 10",
 				"-c",
 				"init",
 				"-c",
@@ -146,7 +145,7 @@
 				"-c",
 				"shutdown"
 			],
-			"problemMatcher": [],
+			"problemMatcher": []
 		},
 		{
 			"type": "shell",
@@ -154,14 +153,11 @@
 			"command": "${workspaceFolder}/toolchain/openocd/bin/openocd.exe",
 			"args": [
 				"-f",
-				"${workspaceFolder}/toolchain/openocd/share/openocd/scripts/interface/cmsis-dap.cfg",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/interface/cmsis-dap.cfg",
 				"-f",
-				"${workspaceFolder}/toolchain/openocd/share/openocd/scripts/target/stm32h7x.cfg",
-				"-c",
-				"transport select swd",
-				"-c",
-				"adapter speed 10000",
-				"-c",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/target/stm32h7x.cfg",
+				"-f",
+				"${workspaceFolder}/openocd.cfg",
 				"init",
 				"-c",
 				"reset halt; wait_halt",
@@ -172,7 +168,23 @@
 				"-c",
 				"shutdown"
 			],
-			"problemMatcher": [],
+			"problemMatcher": []
+		},
+		{
+			"type": "shell",
+			"label": "openocd_open_stm32g431",
+			"command": "${workspaceFolder}/toolchain/openocd/bin/openocd.exe",
+			"args": [
+				"-f",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/interface/cmsis-dap.cfg",
+				"-f",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/target/stm32g4x.cfg",
+				"-f",
+				"${workspaceFolder}/openocd.cfg",
+				"-c",
+				"init",
+			],
+			"problemMatcher": []
 		},
 		{
 			"type": "shell",
@@ -188,9 +200,9 @@
 				"0x20000000",
 				"${workspaceFolder}/dap_test_16k.bin",
 				"--uid",
-				"00017CDBDBEA",
+				"00017CDBDBEA"
 			],
-			"problemMatcher": [],
-		},
+			"problemMatcher": []
+		}
 	]
 }

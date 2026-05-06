@@ -441,7 +441,7 @@ static uint32_t DAP_Connect(const uint8_t *request, uint8_t *response)
         port_name = "NONE";
         break;
     }
-    ulog_info("Dap connect port %s", port_name);
+    ulog_info("Dap open port %s", port_name);
 
     *response = (uint8_t)port;
     return ((1U << 16) | 1U);
@@ -514,7 +514,7 @@ static uint32_t DAP_SWJ_Clock(const uint8_t *request, uint8_t *response)
     }
 
     uint32_t real_freq = bsp_jtag_set_tck_clock(clock);
-    ulog_info("Dap set SWJ clock %d Hz, real clock %d", clock, real_freq);
+    ulog_info("Dap SWJ clock %dHz, real clock %dHz.", clock, real_freq);
 
     *response = DAP_OK;
 #else
@@ -1970,6 +1970,7 @@ uint32_t DAP_ProcessCommand(const uint8_t *request, uint8_t *response)
     uint32_t num;
     uint8_t cmd_id = *request;
 
+    // Check for Vendor command
     if ((cmd_id >= ID_DAP_Vendor0) && (cmd_id <= ID_DAP_Vendor31))
     {
         return DAP_ProcessVendorCommand(request, response);
@@ -2159,23 +2160,29 @@ void DAP_Setup(void)
 #endif
 
     uint32_t vref = bsp_vee_get_vref_voltage();
-    ulog_info("Dap ext vref = %d mV", vref);
+    ulog_info("Dap VREF voltage is %d mV", vref);
 
+#if 1
     if (vref < 1600)
     {
         // 电压小于1.6V，改成3.3V输出
         bsp_vee_set_ref_source(VEE_SOURCE_DAC);
         bsp_vee_set_dac_voltage(3300);
-        ulog_warn("Dap set VEE source DAC, voltage: %d mV", 3300);
+        ulog_warn("Dap VEE source is DAC, voltage: %dmV.", 3300);
     }
     else
     {
         bsp_vee_set_ref_source(VEE_SOURCE_VREF);
         bsp_vee_set_dac_voltage(0);
-        ulog_warn("Dap set VEE source VREF");
+        ulog_warn("Dap VEE source is VREF");
     }
+#else
+    bsp_vee_set_ref_source(VEE_SOURCE_VREF);
+    bsp_vee_set_dac_voltage(0);
+    ulog_warn("Dap VEE source is VREF.");
+#endif
 
     bsp_jtag_enable_port(JTAG_PORT_GPIO);
     bsp_jtag_set_tck_clock(DAP_DEFAULT_SWJ_CLOCK);
-    ulog_info("SWJ default clock %d Hz", DAP_DEFAULT_SWJ_CLOCK);
+    ulog_info("Dap default SWJ clock %dHz.", DAP_DEFAULT_SWJ_CLOCK);
 }

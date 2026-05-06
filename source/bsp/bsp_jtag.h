@@ -128,8 +128,8 @@
 #define JTAG_TCK_EN_HIGH() LL_GPIO_SetOutputPin(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin)
 #define JTAG_TCK_EN_LOW() LL_GPIO_ResetOutputPin(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin)
 
-#define JTAG_RESET_OD_HIGH() LL_GPIO_SetOutputPin(JTAG_RESET_OD_GPIO_Port, JTAG_RESET_OD_Pin)
-#define JTAG_RESET_OD_LOW() LL_GPIO_ResetOutputPin(JTAG_RESET_OD_GPIO_Port, JTAG_RESET_OD_Pin)
+#define JTAG_RESET_OD_HIGH() LL_GPIO_ResetOutputPin(JTAG_RESET_OD_GPIO_Port, JTAG_RESET_OD_Pin) // 反相输出
+#define JTAG_RESET_OD_LOW() LL_GPIO_SetOutputPin(JTAG_RESET_OD_GPIO_Port, JTAG_RESET_OD_Pin)    // 反相输出
 
 // BSRR 寄存器高半字复位，低半字置位
 
@@ -156,7 +156,7 @@
 #define JTAG_SPI_FIFO_SIZE (16U)              // SPI FIFO 深度
 #define JTAG_SWJ_FREQ_MAX (60 * 1000 * 1000U) // 最大频率
 #define JTAG_SWJ_FREQ_MIN (5 * 1000U)         // 最小频率
-#define JTAG_CLK_DUTY_CYCLE (1.0F / 2U)       // 占空比
+#define JTAG_CLK_DUTY_CYCLE (5.0F / 10U)      // 占空比
 
 typedef enum _jtag_port_enum
 {

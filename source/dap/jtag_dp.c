@@ -507,7 +507,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
     bsp_jtag_generate_data_cycle(3U, 1U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
     bsp_jtag_read_tdo_rx_fifo_byte(jtag_rx_buff + 1);
-    ack = ack_remap_table[jtag_rx_buff[1] & 0x07]; // 通过映射表快速转换
+    ack = ack_remap_table[jtag_rx_buff[0 + 1] & 0x07]; // 通过映射表快速转换
 
     if (ack != DAP_TRANSFER_OK)
     {
@@ -520,7 +520,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
         */
 
         tms = 0x03;                            // 011 LSB
-        bsp_jtag_write_tms_tx_fifo_byte(&tms); // 一次性直接编程Idle
+        bsp_jtag_write_tms_tx_fifo_byte(&tms); // Idle
         bsp_jtag_generate_data_cycle(3U, 1U);
         bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
@@ -544,7 +544,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
             bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, 4U);
             bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, 4U);
 
-            if (data) // data可能为NULL，此时丢弃数据
+            if (data != 0) // data可能为NULL，此时丢弃数据
             {
                 *data = ((uint32_t)jtag_rx_buff[0] << 0U) |
                         ((uint32_t)jtag_rx_buff[1] << 8U) |
@@ -606,7 +606,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
         if (n_cycle)
         {
             uint32_t tms_u32 = 0x00000000;
-            uint32_t tdi_u32 = (data) ? (*data) : 0x00000000;
+            uint32_t tdi_u32 = (data != 0) ? (*data) : 0x00000000;
             bsp_jtag_write_tms_tx_fifo((uint8_t *)&tms_u32, 4);
             bsp_jtag_write_tdi_tx_fifo((uint8_t *)&tdi_u32, 4); // 写入数据
             bsp_jtag_generate_data_cycle(32U, 4U);

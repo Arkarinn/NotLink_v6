@@ -53,40 +53,23 @@ void bsp_jtag_init(void)
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM4); // 驱动使能
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2); // 时间戳
 
-    bsp_jtag_enable_port(JTAG_PORT_GPIO); // 所有引脚配置为高阻态
-
     /****************************** 特殊引脚，只需要一次配置 *****************************/
 
-    JTAG_VOUT_DISABLE();                                                               // 5V输出关
-    LL_GPIO_SetPinMode(JTAG_VOUT_EN_GPIO_Port, JTAG_VOUT_EN_Pin, LL_GPIO_MODE_OUTPUT); // 5V输出使能
+    // 5V输出脚
+    JTAG_VOUT_ENABLE();
+    LL_GPIO_SetPinMode(JTAG_VOUT_EN_GPIO_Port, JTAG_VOUT_EN_Pin, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinOutputType(JTAG_VOUT_EN_GPIO_Port, JTAG_VOUT_EN_Pin, LL_GPIO_OUTPUT_PUSHPULL);
 
-    JTAG_RESET_OD_HIGH();                                                                // RESET开漏输出高
-    LL_GPIO_SetPinMode(JTAG_RESET_OD_GPIO_Port, JTAG_RESET_OD_Pin, LL_GPIO_MODE_OUTPUT); // RESET开漏输出脚
+    // RESET开漏输出脚
+    LL_GPIO_SetPinMode(JTAG_RESET_OD_GPIO_Port, JTAG_RESET_OD_Pin, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinOutputType(JTAG_RESET_OD_GPIO_Port, JTAG_RESET_OD_Pin, LL_GPIO_OUTPUT_PUSHPULL);
 
-    JTAG_TCK_EN_LOW();                                                               // 时钟输出关
-    LL_GPIO_SetPinMode(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_MODE_OUTPUT); // TCK输出使能引脚
-    LL_GPIO_SetPinOutputType(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinSpeed(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_SPEED_FREQ_HIGH);
-
-    JTAG_TCK_PULL_HIGH();                                                                // 时钟默认拉高
-    LL_GPIO_SetPinMode(JTAG_TCK_PULL_GPIO_Port, JTAG_TCK_PULL_Pin, LL_GPIO_MODE_OUTPUT); // TCK输出失效时的上下拉引脚
+    // 时钟默认电平脚
+    LL_GPIO_SetPinMode(JTAG_TCK_PULL_GPIO_Port, JTAG_TCK_PULL_Pin, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinOutputType(JTAG_TCK_PULL_GPIO_Port, JTAG_TCK_PULL_Pin, LL_GPIO_OUTPUT_PUSHPULL);
 
-    // TDI->UART串口输出
-    JTAG_TDI_OEN_HIGH();
-    jtag_set_gpio_af_mode(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_AF_8); // COM UART4_TXD
-    LL_GPIO_SetPinMode(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_MODE_ALTERNATE);
-    LL_GPIO_SetPinSpeed(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_SPEED_FREQ_HIGH);
-    LL_GPIO_SetPinPull(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_PULL_NO);
-
-    // DBGRQ->UART串口输入
-    JTAG_DBGRQ_OEN_LOW();
-    jtag_set_gpio_af_mode(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_AF_8); // COM UART4_RXD
-    LL_GPIO_SetPinMode(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_MODE_ALTERNATE);
-    LL_GPIO_SetPinSpeed(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_SPEED_FREQ_HIGH);
-    LL_GPIO_SetPinPull(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_PULL_NO);
+    // 重置所有引脚为默认状态
+    bsp_jtag_deinit();
 
     /* 32位定时器作为时间戳 */
     LL_TIM_InitTypeDef TIM_InitStruct;
@@ -102,8 +85,6 @@ void bsp_jtag_init(void)
     LL_TIM_DisableMasterSlaveMode(TIM2);
     LL_TIM_GenerateEvent_UPDATE(TIM2);
     LL_TIM_EnableCounter(TIM2);
-
-    JTAG_VOUT_ENABLE();
 }
 
 /**
@@ -119,7 +100,7 @@ uint32_t bsp_jtag_get_time_stamp(void)
 /**
  * @brief 初始化接口
  *
- * @param port
+ * @param port GPIO/SWD/JTAG
  */
 void bsp_jtag_enable_port(jtag_port_t port)
 {
@@ -128,7 +109,7 @@ void bsp_jtag_enable_port(jtag_port_t port)
     LL_TIM_OC_InitTypeDef TIM_OC_InitStruct;
     LL_TIM_BDTR_InitTypeDef TIM_BDTRInitStruct;
 
-    bsp_jtag_deinit(); // 重置所有引脚为高阻态
+    bsp_jtag_deinit(); // 重置所有引脚为默认状态
 
     LL_RCC_ClocksTypeDef clks;
     LL_RCC_GetSystemClocksFreq(&clks);
@@ -264,10 +245,6 @@ void bsp_jtag_enable_port(jtag_port_t port)
         LL_GPIO_SetPinMode(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_MODE_ALTERNATE);     //
         jtag_set_gpio_af_mode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_AF_5);              // SWD SPI1_SCK
         LL_GPIO_SetPinMode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_MODE_ALTERNATE);       //
-
-        // RESET->GPIO开漏输出
-        JTAG_RESET_OEN_LOW();  // 开漏输出，这里仅作输入
-        JTAG_RESET_OD_OUT(1U); // 不复位
 
         break;
     case JTAG_PORT_JTAG:
@@ -434,21 +411,9 @@ void bsp_jtag_enable_port(jtag_port_t port)
         LL_GPIO_SetPinMode(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_MODE_ALTERNATE);
         LL_GPIO_SetPinSpeed(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_SPEED_FREQ_HIGH);
 
-        // RESET->GPIO开漏输出
-        JTAG_RESET_OEN_LOW();  // 开漏输出，这里仅作输入
-        JTAG_RESET_OD_OUT(1U); // 不复位
-
-        // DBGRQ->UART串口输入
-        // 不修改
-
         break;
     case JTAG_PORT_GPIO:
         port_enable = JTAG_PORT_GPIO;
-
-        // TDI->UART串口输出
-        JTAG_TDI_OEN_HIGH();                                                           // 串口输出
-        jtag_set_gpio_af_mode(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_AF_8); // COM UART4_TXD
-        LL_GPIO_SetPinMode(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_MODE_ALTERNATE);
 
     default:
         break;
@@ -456,66 +421,30 @@ void bsp_jtag_enable_port(jtag_port_t port)
 }
 
 /**
- * @brief 取消初始化，所有引脚进入高阻状态
+ * @brief 取消初始化，所有引脚进入默认状态
  *
  */
 void bsp_jtag_deinit(void)
 {
-    /* 开漏输出高 */
-    JTAG_RESET_OD_HIGH();
+    JTAG_RESET_OD_HIGH(); // 复位信号输出高
+    JTAG_TCK_PULL_HIGH(); // 时钟默认拉高
+    JTAG_TCK_EN_LOW();    // 时钟输出关
 
     /* 信号脚全部设为输入状态 */
     LL_GPIO_SetPinMode(JTAG_TRST_GPIO_Port, JTAG_TRST_Pin, LL_GPIO_MODE_INPUT);
     LL_GPIO_SetPinMode(JTAG_TDI_GPIO_Port, JTAG_TDI_Pin, LL_GPIO_MODE_INPUT);
-    // LL_GPIO_SetPinMode(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_MODE_INPUT);
+    LL_GPIO_SetPinMode(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_MODE_ALTERNATE); // 默认串口
     LL_GPIO_SetPinMode(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_MODE_INPUT);
+    LL_GPIO_SetPinMode(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinMode(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_MODE_INPUT);
     LL_GPIO_SetPinMode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_MODE_INPUT);
     LL_GPIO_SetPinMode(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_MODE_INPUT);
     LL_GPIO_SetPinMode(JTAG_RTCK_GPIO_Port, JTAG_RTCK_Pin, LL_GPIO_MODE_INPUT);
     LL_GPIO_SetPinMode(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_MODE_INPUT);
     LL_GPIO_SetPinMode(JTAG_RESET_GPIO_Port, JTAG_RESET_Pin, LL_GPIO_MODE_INPUT);
-    // LL_GPIO_SetPinMode(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_MODE_INPUT);
+    LL_GPIO_SetPinMode(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_MODE_ALTERNATE); // 默认串口
 
-    /* 输出速度 */
-    LL_GPIO_SetPinSpeed(JTAG_TRST_GPIO_Port, JTAG_TRST_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetPinSpeed(JTAG_TDI_GPIO_Port, JTAG_TDI_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    // LL_GPIO_SetPinSpeed(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetPinSpeed(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetPinSpeed(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetPinSpeed(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetPinSpeed(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetPinSpeed(JTAG_RTCK_GPIO_Port, JTAG_RTCK_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetPinSpeed(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetPinSpeed(JTAG_RESET_GPIO_Port, JTAG_RESET_Pin, LL_GPIO_SPEED_FREQ_LOW);
-    // LL_GPIO_SetPinSpeed(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_SPEED_FREQ_LOW);
-
-    /* 信号脚无上下拉 */
-    LL_GPIO_SetPinPull(JTAG_TRST_GPIO_Port, JTAG_TRST_Pin, LL_GPIO_PULL_NO);
-    LL_GPIO_SetPinPull(JTAG_TDI_GPIO_Port, JTAG_TDI_Pin, LL_GPIO_PULL_NO);
-    // LL_GPIO_SetPinPull(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_PULL_NO);
-    LL_GPIO_SetPinPull(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_PULL_DOWN); // 上拉
-    LL_GPIO_SetPinPull(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_PULL_NO);
-    LL_GPIO_SetPinPull(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_PULL_NO);
-    LL_GPIO_SetPinPull(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_PULL_NO);
-    LL_GPIO_SetPinPull(JTAG_RTCK_GPIO_Port, JTAG_RTCK_Pin, LL_GPIO_PULL_NO);
-    LL_GPIO_SetPinPull(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_PULL_NO);
-    LL_GPIO_SetPinPull(JTAG_RESET_GPIO_Port, JTAG_RESET_Pin, LL_GPIO_PULL_NO);
-    // LL_GPIO_SetPinPull(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_PULL_NO);
-
-    LL_GPIO_SetPinOutputType(JTAG_TRST_GPIO_Port, JTAG_TRST_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinOutputType(JTAG_TDI_GPIO_Port, JTAG_TDI_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    // LL_GPIO_SetPinOutputType(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinOutputType(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinOutputType(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinOutputType(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinOutputType(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinOutputType(JTAG_RTCK_GPIO_Port, JTAG_RTCK_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinOutputType(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinOutputType(JTAG_RESET_GPIO_Port, JTAG_RESET_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-    // LL_GPIO_SetPinOutputType(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_OUTPUT_PUSHPULL);
-
-    /* 所有方向引脚输出 */
+    /* 所有OEN引脚输出 */
     LL_GPIO_SetPinMode(JTAG_TRST_DIR_GPIO_Port, JTAG_TRST_DIR_Pin, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinMode(JTAG_TDI_DIR_GPIO_Port, JTAG_TDI_DIR_Pin, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinMode(JTAG_TMS_DIR_GPIO_Port, JTAG_TMS_DIR_Pin, LL_GPIO_MODE_OUTPUT);
@@ -525,7 +454,7 @@ void bsp_jtag_deinit(void)
     LL_GPIO_SetPinMode(JTAG_RESET_DIR_GPIO_Port, JTAG_RESET_DIR_Pin, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_SetPinMode(JTAG_DBGRQ_DIR_GPIO_Port, JTAG_DBGRQ_DIR_Pin, LL_GPIO_MODE_OUTPUT);
 
-    /* 所有方向引脚推挽输出 */
+    /* 所有OEN引脚推挽输出 */
     LL_GPIO_SetPinOutputType(JTAG_TRST_DIR_GPIO_Port, JTAG_TRST_DIR_Pin, LL_GPIO_OUTPUT_PUSHPULL);
     LL_GPIO_SetPinOutputType(JTAG_TDI_DIR_GPIO_Port, JTAG_TDI_DIR_Pin, LL_GPIO_OUTPUT_PUSHPULL);
     LL_GPIO_SetPinOutputType(JTAG_TMS_DIR_GPIO_Port, JTAG_TMS_DIR_Pin, LL_GPIO_OUTPUT_PUSHPULL);
@@ -535,7 +464,7 @@ void bsp_jtag_deinit(void)
     LL_GPIO_SetPinOutputType(JTAG_RESET_DIR_GPIO_Port, JTAG_RESET_DIR_Pin, LL_GPIO_OUTPUT_PUSHPULL);
     LL_GPIO_SetPinOutputType(JTAG_DBGRQ_DIR_GPIO_Port, JTAG_DBGRQ_DIR_Pin, LL_GPIO_OUTPUT_PUSHPULL);
 
-    /* 所有方向引脚快速输出 */
+    /* 所有DIR引脚快速输出 */
     LL_GPIO_SetPinSpeed(JTAG_TRST_DIR_GPIO_Port, JTAG_TRST_DIR_Pin, LL_GPIO_SPEED_FREQ_HIGH);
     LL_GPIO_SetPinSpeed(JTAG_TDI_DIR_GPIO_Port, JTAG_TDI_DIR_Pin, LL_GPIO_SPEED_FREQ_HIGH);
     LL_GPIO_SetPinSpeed(JTAG_TMS_DIR_GPIO_Port, JTAG_TMS_DIR_Pin, LL_GPIO_SPEED_FREQ_HIGH);
@@ -545,15 +474,61 @@ void bsp_jtag_deinit(void)
     LL_GPIO_SetPinSpeed(JTAG_RESET_DIR_GPIO_Port, JTAG_RESET_DIR_Pin, LL_GPIO_SPEED_FREQ_HIGH);
     LL_GPIO_SetPinSpeed(JTAG_DBGRQ_DIR_GPIO_Port, JTAG_DBGRQ_DIR_Pin, LL_GPIO_SPEED_FREQ_HIGH);
 
-    /* 拉低所有OE信号，所有外部引脚高阻态 */
+    /* 拉低所有OE信号，所有外部引脚高阻态，除了串口 */
     JTAG_TRST_OEN_LOW();
-    // JTAG_TDI_OEN_LOW();
+    JTAG_TDI_OEN_HIGH(); // 串口输出
     JTAG_TMS_OEN_LOW();
     JTAG_TCK_OEN_LOW();
     JTAG_RTCK_OEN_LOW();
     JTAG_TDO_OEN_LOW();
     JTAG_RESET_OEN_LOW();
-    // JTAG_DBGRQ_OEN_LOW();
+    JTAG_DBGRQ_OEN_LOW(); // 串口输入
+
+    /* 输出速度 */
+    LL_GPIO_SetPinSpeed(JTAG_TRST_GPIO_Port, JTAG_TRST_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_TDI_GPIO_Port, JTAG_TDI_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_RTCK_GPIO_Port, JTAG_RTCK_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_RESET_GPIO_Port, JTAG_RESET_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinSpeed(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_SPEED_FREQ_HIGH);
+
+    /* 信号脚无上下拉 */
+    LL_GPIO_SetPinPull(JTAG_TRST_GPIO_Port, JTAG_TRST_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_TDI_GPIO_Port, JTAG_TDI_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_PULL_UP); // 上拉
+    LL_GPIO_SetPinPull(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_RTCK_GPIO_Port, JTAG_RTCK_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_RESET_GPIO_Port, JTAG_RESET_Pin, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinPull(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_PULL_NO);
+
+    /* 推挽输出 */
+    LL_GPIO_SetPinOutputType(JTAG_TRST_GPIO_Port, JTAG_TRST_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_TDI_GPIO_Port, JTAG_TDI_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_TMS_DI_GPIO_Port, JTAG_TMS_DI_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_RTCK_GPIO_Port, JTAG_RTCK_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_RESET_GPIO_Port, JTAG_RESET_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinOutputType(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_OUTPUT_PUSHPULL);
+
+    /* 复用回默认状态 */
+    jtag_set_gpio_af_mode(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_AF_8);     // COM UART4_TXD
+    jtag_set_gpio_af_mode(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_AF_8); // COM UART4_RXD
 }
 
 /**
