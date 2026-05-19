@@ -9,6 +9,7 @@
             "toolchainFile": "${workspaceFolder}/scripts/cmake/arm-gcc-cortex-m7.cmake",
             "cacheVariables": {
                 "ARM_TOOLCHAIN_PATH": "${workspaceFolder}/toolchain/arm-none-eabi-gcc/bin",
+                "CMAKE_VERBOSE_MAKEFILE": "OFF",
                 "CMAKE_MAKE_PROGRAM": "${workspaceFolder}/toolchain/ninja/ninja.exe"
             },
             "cmakeExecutable": "${workspaceFolder}/toolchain/cmake/bin/cmake.exe"

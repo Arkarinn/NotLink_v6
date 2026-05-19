@@ -4,13 +4,13 @@
 		{
 			"type": "shell",
 			"label": "pyocd_load_flash_boot",
-			"command": "${workspaceFolder}\\.venv\\Scripts\\pyocd.exe",
+			"command": "${workspaceFolder}/.venv/Scripts/pyocd.exe",
 			"args": [
 				"load",
 				"--target",
 				"STM32H750VBTx",
 				"--frequency",
-				"10M",
+				"30M",
 				"--erase",
 				"sector",
 				"${workspaceFolder}/build/source/boot/boot.hex",
@@ -22,7 +22,7 @@
 		{
 			"type": "shell",
 			"label": "pyocd_load_spi_app_rtos",
-			"command": "${workspaceFolder}\\.venv\\Scripts\\pyocd.exe",
+			"command": "${workspaceFolder}/.venv/Scripts/pyocd.exe",
 			"args": [
 				"load",
 				"--target",
@@ -30,21 +30,19 @@
 				"--script",
 				"${workspaceFolder}/scripts/pyocd/pyocd_user.py",
 				"--frequency",
-				"10M",
+				"30M",
 				"--erase",
 				"chip",
 				"--base-address",
 				"0x90000000",
-				"${workspaceFolder}/build/source/app_rtos/app_rtos.bin",
-				"--uid",
-				"A429359E62920FDD1A1044C4414F8DEA"
+				"${workspaceFolder}/build/source/app_rtos/app_rtos.bin"
 			],
 			"problemMatcher": []
 		},
 		{
 			"type": "shell",
 			"label": "pyocd_load_flash_stm32f103_64k",
-			"command": "${workspaceFolder}\\.venv\\Scripts\\pyocd.exe",
+			"command": "${workspaceFolder}/.venv/Scripts/pyocd.exe",
 			"args": [
 				"load",
 				"--target",
@@ -52,30 +50,26 @@
 				"--erase",
 				"chip",
 				"--frequency",
-				"10M",
-				"${workspaceFolder}/dap_test_64k.hex",
-				"--uid",
-				"00017CDBDBEA"
+				"30M",
+				"${workspaceFolder}/dap_test_64k.hex"
 			],
 			"problemMatcher": []
 		},
 		{
 			"type": "shell",
 			"label": "pyocd_load_ram_stm32f103_64k",
-			"command": "${workspaceFolder}\\.venv\\Scripts\\pyocd.exe",
+			"command": "${workspaceFolder}/.venv/Scripts/pyocd.exe",
 			"args": [
 				"load",
 				"-O",
 				"dap_protocol=jtag",
 				"--frequency",
-				"10000000",
+				"30000000",
 				"--target",
 				"STM32F103RC",
 				"--base-address",
 				"0x20000000",
-				"${workspaceFolder}/dap_test_64k.bin",
-				"--uid",
-				"00017CDBDBEA",
+				"${workspaceFolder}/dap_test_64k.bin"
 			],
 			"problemMatcher": []
 		},
@@ -92,7 +86,7 @@
 				"--protocol",
 				"swd",
 				"--speed",
-				"10000",
+				"30000",
 				"--probe",
 				"0d28:0204",
 				"--iterations",
@@ -113,37 +107,11 @@
 				"--protocol",
 				"swd",
 				"--speed",
-				"10000",
+				"30000",
 				"--probe",
 				"0d28:0204",
 				"--iterations",
 				"20"
-			],
-			"problemMatcher": []
-		},
-		{
-			"type": "shell",
-			"label": "openocd_load_flash_stm32f103_64k",
-			"command": "${workspaceFolder}/toolchain/openocd/bin/openocd.exe",
-			"args": [
-				"-f",
-				"${workspaceFolder}/toolchain/openocd/openocd/scripts/interface/cmsis-dap.cfg",
-				"-c",
-				"transport select jtag",
-				"-f",
-				"${workspaceFolder}/toolchain/openocd/openocd/scripts/target/stm32f1x.cfg",
-				"-c",
-				"adapter speed 10",
-				"-c",
-				"init",
-				"-c",
-				"reset halt; wait_halt",
-				"-c",
-				"flash write_image erase dap_test_64k.hex",
-				"-c",
-				"reset",
-				"-c",
-				"shutdown"
 			],
 			"problemMatcher": []
 		},
@@ -158,15 +126,36 @@
 				"${workspaceFolder}/toolchain/openocd/openocd/scripts/target/stm32h7x.cfg",
 				"-f",
 				"${workspaceFolder}/openocd.cfg",
+				"-c",
 				"init",
 				"-c",
 				"reset halt; wait_halt",
 				"-c",
 				"flash write_image erase ./build/source/boot/boot.hex",
 				"-c",
-				"reset",
+				"exit"
+			],
+			"problemMatcher": []
+		},
+		{
+			"type": "shell",
+			"label": "openocd_load_flash_app_rtos_without_boot",
+			"command": "${workspaceFolder}/toolchain/openocd/bin/openocd.exe",
+			"args": [
+				"-f",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/interface/cmsis-dap.cfg",
+				"-f",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/target/stm32h7x.cfg",
+				"-f",
+				"${workspaceFolder}/openocd.cfg",
 				"-c",
-				"shutdown"
+				"init",
+				"-c",
+				"reset halt; wait_halt",
+				"-c",
+				"flash write_image erase ./build/source/app_rtos/app_rtos_without_boot.hex",
+				"-c",
+				"exit"
 			],
 			"problemMatcher": []
 		},
@@ -183,24 +172,26 @@
 				"${workspaceFolder}/openocd.cfg",
 				"-c",
 				"init",
+				"-c",
+				"reset halt; wait_halt",
 			],
 			"problemMatcher": []
 		},
 		{
 			"type": "shell",
-			"label": "pyocd_load_ram_stm32g431_16k",
-			"command": "${workspaceFolder}\\.venv\\Scripts\\pyocd.exe",
+			"label": "openocd_open_stm32f103",
+			"command": "${workspaceFolder}/toolchain/openocd/bin/openocd.exe",
 			"args": [
-				"load",
-				"--target",
-				"STM32G431RBTx",
-				"--frequency",
-				"10M",
-				"--base-address",
-				"0x20000000",
-				"${workspaceFolder}/dap_test_16k.bin",
-				"--uid",
-				"00017CDBDBEA"
+				"-f",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/interface/cmsis-dap.cfg",
+				"-f",
+				"${workspaceFolder}/toolchain/openocd/openocd/scripts/target/stm32f1x.cfg",
+				"-f",
+				"${workspaceFolder}/openocd.cfg",
+				"-c",
+				"init",
+				"-c",
+				"reset halt; wait_halt",
 			],
 			"problemMatcher": []
 		}
