@@ -1,5 +1,6 @@
 
-target_sources(${PROJECT_NAME} PRIVATE
+target_sources(${PROJECT_NAME}
+	INTERFACE
     # {{BEGIN_TARGET_SOURCES}}
 	${CMAKE_CURRENT_LIST_DIR}/src/tx_thread_context_restore.S
 	${CMAKE_CURRENT_LIST_DIR}/src/tx_thread_context_save.S
@@ -12,6 +13,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     # {{END_TARGET_SOURCES}}
 )
 
-target_include_directories(${PROJECT_NAME} PUBLIC
+target_include_directories(${PROJECT_NAME}
+	INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/inc
 )

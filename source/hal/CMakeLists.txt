@@ -6,7 +6,8 @@ file(GLOB SOURCE_FILES "*.c")
 file(GLOB HEADER_FILES "*.h")
 
 # 添加源码
-add_library(${PROJECT_NAME} INTERFACE
+add_library(${PROJECT_NAME}
+    INTERFACE
 )
 
 target_sources(${PROJECT_NAME} 

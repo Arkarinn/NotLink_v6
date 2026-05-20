@@ -89,7 +89,9 @@
 /*!< Uncomment the following line if you need to relocate the vector table
      anywhere in FLASH BANK1 or AXI SRAM, else the vector table is kept at the automatic
      remap of boot address selected */
-/* #define USER_VECT_TAB_ADDRESS */
+#ifndef CONFIG_APP_WITHOUT_BOOT
+#define USER_VECT_TAB_ADDRESS
+#endif
 
 #if defined(USER_VECT_TAB_ADDRESS)
 #if defined(DUAL_CORE) && defined(CORE_CM4)
@@ -110,7 +112,9 @@
 #else
 /*!< Uncomment the following line if you need to relocate your vector Table
      in D1 AXI SRAM else user remap will be done in FLASH BANK1. */
-/* #define VECT_TAB_SRAM */
+#ifndef CONFIG_APP_WITHOUT_BOOT
+#define VECT_TAB_SRAM
+#endif
 #if defined(VECT_TAB_SRAM)
 #define VECT_TAB_BASE_ADDRESS D1_AXISRAM_BASE /*!< Vector Table base address field. \
                                                    This value must be a multiple of 0x400. */

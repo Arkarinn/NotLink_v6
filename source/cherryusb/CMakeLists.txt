@@ -2,7 +2,12 @@
 
 project ("cherryusb" C)
 
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME}
+	INTERFACE
+)
+
+target_sources(${PROJECT_NAME}
+	INTERFACE
 	"${CMAKE_CURRENT_SOURCE_DIR}/core/usbd_core.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/class/cdc/usbd_cdc_acm.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/port/dwc2/usb_dc_dwc2.c"
@@ -10,11 +15,11 @@ add_library(${PROJECT_NAME} STATIC
 )
 
 target_compile_definitions(${PROJECT_NAME}
-	PUBLIC
+	INTERFACE
 )
 
 target_link_libraries(${PROJECT_NAME}
-	PUBLIC
+	INTERFACE
 	"cmsis"
 	"ulog"
 	"hal"
@@ -23,7 +28,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME}
-	PUBLIC
+	INTERFACE
 	"${CMAKE_CURRENT_SOURCE_DIR}"
 	"${CMAKE_CURRENT_SOURCE_DIR}/core"
 	"${CMAKE_CURRENT_SOURCE_DIR}/common"

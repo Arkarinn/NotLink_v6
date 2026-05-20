@@ -209,8 +209,10 @@ void bsp_jtag_enable_port(jtag_port_t port)
         LL_TIM_DisableDMAReq_TRIG(TIM4);
         LL_TIM_SetTriggerOutput(TIM4, LL_TIM_TRGO_UPDATE);
 
+#ifdef CONFIG_OPTIMIZE_TMS_HARD_OE
+
         LL_TIM_OC_StructInit(&TIM_OC_InitStruct);
-        TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;     // PWM1模式
+        TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;     //
         TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_ENABLE; // 使能输出
         TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
         TIM_OC_InitStruct.CompareValue = 8 * (tim_freq / 10000000) + (tim_freq / 10000000) / 4;
@@ -218,6 +220,23 @@ void bsp_jtag_enable_port(jtag_port_t port)
         LL_TIM_OC_Init(TIM4, LL_TIM_CHANNEL_CH1, &TIM_OC_InitStruct);
         LL_TIM_OC_DisableFast(TIM4, LL_TIM_CHANNEL_CH1);
         LL_TIM_OC_EnablePreload(TIM4, LL_TIM_CHANNEL_CH1);
+        LL_TIM_OC_Init(TIM4, LL_TIM_CHANNEL_CH2, &TIM_OC_InitStruct);
+        LL_TIM_OC_DisableFast(TIM4, LL_TIM_CHANNEL_CH2);
+        LL_TIM_OC_EnablePreload(TIM4, LL_TIM_CHANNEL_CH2);
+
+#else /* CONFIG_OPTIMIZE_TMS_HARD_OE */
+
+        LL_TIM_OC_StructInit(&TIM_OC_InitStruct);
+        TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;     //
+        TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_ENABLE; // 使能输出
+        TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
+        TIM_OC_InitStruct.CompareValue = 8 * (tim_freq / 10000000) + (tim_freq / 10000000) / 4;
+        TIM_OC_InitStruct.OCPolarity = LL_TIM_OCPOLARITY_HIGH; // 极性正
+        LL_TIM_OC_Init(TIM4, LL_TIM_CHANNEL_CH1, &TIM_OC_InitStruct);
+        LL_TIM_OC_DisableFast(TIM4, LL_TIM_CHANNEL_CH1);
+        LL_TIM_OC_EnablePreload(TIM4, LL_TIM_CHANNEL_CH1);
+
+#endif /* CONFIG_OPTIMIZE_TMS_HARD_OE */
 
         LL_TIM_SetOnePulseMode(TIM4, LL_TIM_ONEPULSEMODE_SINGLE); // 单脉冲模式
         LL_TIM_EnableAllOutputs(TIM4);                            // 使能所有输出
@@ -245,6 +264,14 @@ void bsp_jtag_enable_port(jtag_port_t port)
         LL_GPIO_SetPinMode(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_MODE_ALTERNATE);     //
         jtag_set_gpio_af_mode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_AF_5);              // SWD SPI1_SCK
         LL_GPIO_SetPinMode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_MODE_ALTERNATE);       //
+
+#ifdef CONFIG_OPTIMIZE_TMS_HARD_OE
+
+        // TMS_DIR->数据方向，硬件控制
+        jtag_set_gpio_af_mode(JTAG_TMS_DIR_GPIO_Port, JTAG_TMS_DIR_Pin, LL_GPIO_AF_2);        // SWD TIM4_CH2
+        LL_GPIO_SetPinMode(JTAG_TMS_DIR_GPIO_Port, JTAG_TMS_DIR_Pin, LL_GPIO_MODE_ALTERNATE); //
+
+#endif
 
         break;
     case JTAG_PORT_JTAG:
@@ -393,23 +420,21 @@ void bsp_jtag_enable_port(jtag_port_t port)
         // TCK->SPI时钟输出
         JTAG_TCK_EN_HIGH();
         JTAG_TCK_OUT(1U);
-        JTAG_TCK_PULL_HIGH();                                                                   // 时钟不输出时默认为高
-        JTAG_TCK_OEN_HIGH();                                                                    // SWD时钟输出
-        LL_GPIO_SetPinSpeed(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_SPEED_FREQ_HIGH); //
-        jtag_set_gpio_af_mode(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_AF_3);          // SWD TIM8_CH3
-        LL_GPIO_SetPinMode(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_MODE_ALTERNATE);   //
-        jtag_set_gpio_af_mode(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_AF_2);            // SWD TIM4_CH1
-        LL_GPIO_SetPinMode(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_MODE_ALTERNATE);     //
-        jtag_set_gpio_af_mode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_AF_5);              // SWD SPI1_SCK
-        LL_GPIO_SetPinMode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_MODE_ALTERNATE);       //
-        jtag_set_gpio_af_mode(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_AF_6);              // SWD SPI3_SCK
-        LL_GPIO_SetPinMode(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_MODE_ALTERNATE);       //
+        JTAG_TCK_PULL_HIGH();                                                                 // 时钟不输出时默认为高
+        JTAG_TCK_OEN_HIGH();                                                                  // SWD时钟输出
+        jtag_set_gpio_af_mode(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_AF_3);        // SWD TIM8_CH3
+        LL_GPIO_SetPinMode(JTAG_TCK_GEN_GPIO_Port, JTAG_TCK_GEN_Pin, LL_GPIO_MODE_ALTERNATE); //
+        jtag_set_gpio_af_mode(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_AF_2);          // SWD TIM4_CH1
+        LL_GPIO_SetPinMode(JTAG_TCK_EN_GPIO_Port, JTAG_TCK_EN_Pin, LL_GPIO_MODE_ALTERNATE);   //
+        jtag_set_gpio_af_mode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_AF_5);            // SWD SPI1_SCK
+        LL_GPIO_SetPinMode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_MODE_ALTERNATE);     //
+        jtag_set_gpio_af_mode(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_AF_6);            // SWD SPI3_SCK
+        LL_GPIO_SetPinMode(JTAG_TCK_S_GPIO_Port, JTAG_TCK_S_Pin, LL_GPIO_MODE_ALTERNATE);     //
 
         // TDO->SPI数据输入
         JTAG_TDO_OEN_LOW();                                                    // SPI输入
         jtag_set_gpio_af_mode(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_AF_6); // SPI3_MOSI
         LL_GPIO_SetPinMode(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_MODE_ALTERNATE);
-        LL_GPIO_SetPinSpeed(JTAG_TDO_GPIO_Port, JTAG_TDO_Pin, LL_GPIO_SPEED_FREQ_HIGH);
 
         break;
     case JTAG_PORT_GPIO:
@@ -602,13 +627,49 @@ uint32_t bsp_jtag_set_tck_clock(uint32_t freq)
     return real_freq;
 }
 
+#ifdef CONFIG_OPTIMIZE_TMS_HARD_OE
+/**
+ * @brief 生成时钟，自动控制OE
+ *
+ * @param count Must be less than 8U * JTAG_SPI_FIFO_SIZE
+ */
+void bsp_jtag_generate_data_cycle_with_oe(uint32_t count_s1, uint32_t count_s2)
+{
+    uint32_t n_bytes = (count_s1 + count_s2 + 7) / 8;
+
+    LL_TIM_SetRepetitionCounter(TIM8, (8U * n_bytes) - 1U);
+#if (JTAG_REG_OPTIMIZE != 0)
+    LL_TIM_WriteReg(TIM8, EGR, TIM_EGR_UG);
+#else
+    LL_TIM_GenerateEvent_UPDATE(TIM8);
+#endif
+
+    LL_TIM_SetAutoReload(TIM4, tim_div_count * (8U * n_bytes) + (tim_div_count / 8U) - 1U);
+    LL_TIM_OC_SetCompareCH1(TIM4, tim_div_count * (count_s1 + count_s2) + (tim_div_count / 8U));
+    LL_TIM_OC_SetCompareCH2(TIM4, tim_div_count * count_s1 + (tim_div_count / 8U));
+
+#if (JTAG_REG_OPTIMIZE != 0)
+    LL_TIM_WriteReg(TIM4, EGR, TIM_EGR_UG);
+#else
+    LL_TIM_GenerateEvent_UPDATE(TIM4);
+#endif
+
+#if (JTAG_REG_OPTIMIZE != 0)
+    LL_TIM_WriteReg(TIM8, CR1, TIM_CR1_ARPE | TIM_CR1_OPM | TIM_CR1_CEN);
+#else
+    LL_TIM_EnableCounter(TIM8);
+#endif
+}
+#else /* CONFIG_OPTIMIZE_TMS_HARD_OE */
 /**
  * @brief 生成时钟
  *
  * @param count Must be less than 8U * JTAG_SPI_FIFO_SIZE
  */
-__INLINE void bsp_jtag_generate_data_cycle(uint32_t count, uint32_t n_bytes)
+void bsp_jtag_generate_data_cycle(uint32_t count)
 {
+    uint32_t n_bytes = (count + 7) / 8;
+
     LL_TIM_SetRepetitionCounter(TIM8, (8U * n_bytes) - 1U);
 #if (JTAG_REG_OPTIMIZE != 0)
     LL_TIM_WriteReg(TIM8, EGR, TIM_EGR_UG);
@@ -630,6 +691,7 @@ __INLINE void bsp_jtag_generate_data_cycle(uint32_t count, uint32_t n_bytes)
     LL_TIM_EnableCounter(TIM8);
 #endif
 }
+#endif /* CONFIG_OPTIMIZE_TMS_HARD_OE */
 
 /**
  * @brief 等待定时器运行结束
@@ -643,44 +705,12 @@ void bsp_jtag_wait_data_cycle(void)
 }
 
 /**
- * @brief 生成空周期
- *
- * @param count Must be less than 65535
- */
-void bsp_jtag_generate_dummy_cycle(uint32_t count)
-{
-    LL_TIM_SetRepetitionCounter(TIM8, count - 1U);
-#if (JTAG_REG_OPTIMIZE != 0)
-    LL_TIM_WriteReg(TIM8, EGR, TIM_EGR_UG);
-#else
-    LL_TIM_GenerateEvent_UPDATE(TIM8);
-#endif
-
-    LL_TIM_OC_SetMode(TIM4, LL_TIM_CHANNEL_CH1, LL_TIM_OCMODE_FORCED_ACTIVE); // 强制输出高
-
-    // LL_TIM_SetAutoReload(TIM4, tim_div_count - 1U); //
-    // LL_TIM_OC_SetCompareCH1(TIM4, tim_div_count);   // 永不禁止输出
-    // LL_TIM_WriteReg(TIM4, EGR, TIM_EGR_UG);         // LL_TIM_GenerateEvent_UPDATE(TIM4);
-
-#if (JTAG_REG_OPTIMIZE != 0)
-    LL_TIM_WriteReg(TIM8, CR1, TIM_CR1_ARPE | TIM_CR1_OPM | TIM_CR1_CEN);
-#else
-    LL_TIM_EnableCounter(TIM8);
-#endif
-    while (LL_TIM_IsEnabledCounter(TIM8))
-    {
-    }
-
-    LL_TIM_OC_SetMode(TIM4, LL_TIM_CHANNEL_CH1, LL_TIM_OCMODE_PWM1); // 比较输出
-}
-
-/**
  * @brief 填充FIFO
  *
  * @param data
  * @param n_bytes
  */
-__INLINE void bsp_jtag_write_tms_tx_fifo(uint8_t *data_buff, uint32_t n_bytes)
+void bsp_jtag_write_tms_tx_fifo(uint8_t *data_buff, uint32_t n_bytes)
 {
     while (n_bytes)
     {
@@ -695,7 +725,7 @@ __INLINE void bsp_jtag_write_tms_tx_fifo(uint8_t *data_buff, uint32_t n_bytes)
  *
  * @param data_buff
  */
-__INLINE void bsp_jtag_write_tms_tx_fifo_byte(uint8_t *data_buff)
+void bsp_jtag_write_tms_tx_fifo_byte(uint8_t *data_buff)
 {
     LL_SPI_TransmitData8(SPI1, *data_buff);
 }
@@ -706,7 +736,7 @@ __INLINE void bsp_jtag_write_tms_tx_fifo_byte(uint8_t *data_buff)
  * @param data_buff
  * @param n_bytes
  */
-__INLINE void bsp_jtag_read_tms_rx_fifo(uint8_t *data_buff, uint32_t n_bytes)
+void bsp_jtag_read_tms_rx_fifo(uint8_t *data_buff, uint32_t n_bytes)
 {
     while (n_bytes)
     {
@@ -724,7 +754,7 @@ __INLINE void bsp_jtag_read_tms_rx_fifo(uint8_t *data_buff, uint32_t n_bytes)
  *
  * @param data_buff
  */
-__INLINE void bsp_jtag_read_tms_rx_fifo_byte(uint8_t *data_buff)
+void bsp_jtag_read_tms_rx_fifo_byte(uint8_t *data_buff)
 {
     while (LL_SPI_IsActiveFlag_RXP(SPI1) != 1U)
     {
@@ -738,7 +768,7 @@ __INLINE void bsp_jtag_read_tms_rx_fifo_byte(uint8_t *data_buff)
  * @param data_buff 缓冲区
  * @param max_size  可用大小
  */
-__INLINE void bsp_jtag_clean_tms_rx_fifo(uint8_t *data_buff, uint32_t max_size)
+void bsp_jtag_clean_tms_rx_fifo(uint8_t *data_buff, uint32_t max_size)
 {
     uint32_t i = 0;
     while (LL_SPI_IsActiveFlag_RXP(SPI1))
@@ -754,7 +784,7 @@ __INLINE void bsp_jtag_clean_tms_rx_fifo(uint8_t *data_buff, uint32_t max_size)
  * @param data
  * @param n_bytes
  */
-__INLINE void bsp_jtag_write_tdi_tx_fifo(uint8_t *data_buff, uint32_t n_bytes)
+void bsp_jtag_write_tdi_tx_fifo(uint8_t *data_buff, uint32_t n_bytes)
 {
     while (n_bytes)
     {
@@ -770,7 +800,7 @@ __INLINE void bsp_jtag_write_tdi_tx_fifo(uint8_t *data_buff, uint32_t n_bytes)
  * @param data_buff
  * @param n_bytes
  */
-__INLINE void bsp_jtag_read_tdo_rx_fifo(uint8_t *data_buff, uint32_t n_bytes)
+void bsp_jtag_read_tdo_rx_fifo(uint8_t *data_buff, uint32_t n_bytes)
 {
     uint8_t *end = data_buff + n_bytes;
     while (data_buff < end)
@@ -788,7 +818,7 @@ __INLINE void bsp_jtag_read_tdo_rx_fifo(uint8_t *data_buff, uint32_t n_bytes)
  *
  * @param data_buff
  */
-__INLINE void bsp_jtag_write_tdi_tx_fifo_byte(uint8_t *data_buff)
+void bsp_jtag_write_tdi_tx_fifo_byte(uint8_t *data_buff)
 {
     LL_SPI_TransmitData8(SPI3, *data_buff);
 }
@@ -798,7 +828,7 @@ __INLINE void bsp_jtag_write_tdi_tx_fifo_byte(uint8_t *data_buff)
  *
  * @param data_buff
  */
-__INLINE void bsp_jtag_read_tdo_rx_fifo_byte(uint8_t *data_buff)
+void bsp_jtag_read_tdo_rx_fifo_byte(uint8_t *data_buff)
 {
     while (LL_SPI_IsActiveFlag_RXP(SPI3) != 1U)
     {
@@ -810,7 +840,7 @@ __INLINE void bsp_jtag_read_tdo_rx_fifo_byte(uint8_t *data_buff)
  * @brief 打开SPI外设
  *
  */
-__INLINE void bsp_jtag_enable_spi_tms(void)
+void bsp_jtag_enable_spi_tms(void)
 {
 #if (JTAG_REG_OPTIMIZE != 0)
     LL_SPI_WriteReg(SPI1, CR1, SPI_CR1_SPE);
@@ -823,7 +853,7 @@ __INLINE void bsp_jtag_enable_spi_tms(void)
  * @brief 关闭SPI外设
  *
  */
-__INLINE void bsp_jtag_disable_spi_tms(void)
+void bsp_jtag_disable_spi_tms(void)
 {
 #if (JTAG_REG_OPTIMIZE != 0)
     LL_SPI_WriteReg(SPI1, CR1, 0);
@@ -836,7 +866,7 @@ __INLINE void bsp_jtag_disable_spi_tms(void)
  * @brief 打开SPI外设
  *
  */
-__INLINE void bsp_jtag_enable_spi_tdi_tdo(void)
+void bsp_jtag_enable_spi_tdi_tdo(void)
 {
 #if (JTAG_REG_OPTIMIZE != 0)
     LL_SPI_WriteReg(SPI3, CR1, SPI_CR1_SPE);
@@ -849,7 +879,7 @@ __INLINE void bsp_jtag_enable_spi_tdi_tdo(void)
  * @brief 关闭SPI外设
  *
  */
-__INLINE void bsp_jtag_disable_spi_tdi_tdo(void)
+void bsp_jtag_disable_spi_tdi_tdo(void)
 {
 #if (JTAG_REG_OPTIMIZE != 0)
     LL_SPI_WriteReg(SPI3, CR1, 0);
@@ -862,7 +892,7 @@ __INLINE void bsp_jtag_disable_spi_tdi_tdo(void)
  * @brief 从机片选
  *
  */
-__INLINE void bsp_jtag_enable_transfer_tms(void)
+void bsp_jtag_enable_transfer_tms(void)
 {
 #if (JTAG_REG_OPTIMIZE != 0)
     LL_SPI_WriteReg(SPI1, CR1, SPI_CR1_SPE | SPI_CR1_SSI);
@@ -875,7 +905,7 @@ __INLINE void bsp_jtag_enable_transfer_tms(void)
  * @brief 从机片选
  *
  */
-__INLINE void bsp_jtag_disable_transfer_tms(void)
+void bsp_jtag_disable_transfer_tms(void)
 {
 #if (JTAG_REG_OPTIMIZE != 0)
     LL_SPI_WriteReg(SPI1, CR1, SPI_CR1_SPE);
@@ -888,7 +918,7 @@ __INLINE void bsp_jtag_disable_transfer_tms(void)
  * @brief 从机片选
  *
  */
-__INLINE void bsp_jtag_enable_transfer_tdi_tdo(void)
+void bsp_jtag_enable_transfer_tdi_tdo(void)
 {
 #if (JTAG_REG_OPTIMIZE != 0)
     LL_SPI_WriteReg(SPI3, CR1, SPI_CR1_SPE | SPI_CR1_SSI);
@@ -901,7 +931,7 @@ __INLINE void bsp_jtag_enable_transfer_tdi_tdo(void)
  * @brief 从机片选
  *
  */
-__INLINE void bsp_jtag_disable_transfer_tdi_tdo(void)
+void bsp_jtag_disable_transfer_tdi_tdo(void)
 {
 #if (JTAG_REG_OPTIMIZE != 0)
     LL_SPI_WriteReg(SPI3, CR1, SPI_CR1_SPE);

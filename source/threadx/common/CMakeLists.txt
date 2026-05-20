@@ -2,7 +2,10 @@ function(target_sources_if_not_overridden filename)
     list(FIND TX_SRC_OVERRIDES ${filename} OVERRIDE_FOUND)
     if( OVERRIDE_FOUND EQUAL -1 )
         # message(STATUS "** Using original ${filename} from common/src **")
-        target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/${filename})
+        target_sources(${PROJECT_NAME}
+			INTERFACE 
+			${CMAKE_CURRENT_LIST_DIR}/src/${filename}
+		)
     endif()
 endfunction()
 
@@ -11,7 +14,7 @@ target_sources_if_not_overridden("tx_thread_delete.c")
 target_sources_if_not_overridden("tx_thread_reset.c")
 
 target_sources(${PROJECT_NAME}
-    PRIVATE
+    INTERFACE
     # {{BEGIN_TARGET_SOURCES}}
 	${CMAKE_CURRENT_LIST_DIR}/src/tx_block_allocate.c
 	${CMAKE_CURRENT_LIST_DIR}/src/tx_block_pool_cleanup.c
@@ -196,14 +199,12 @@ target_sources(${PROJECT_NAME}
 	${CMAKE_CURRENT_LIST_DIR}/src/txe_timer_deactivate.c
 	${CMAKE_CURRENT_LIST_DIR}/src/txe_timer_delete.c
 	${CMAKE_CURRENT_LIST_DIR}/src/txe_timer_info_get.c
-
     # {{END_TARGET_SOURCES}}
 )
 
 # Add the Common/inc directory to the project include list
 target_include_directories(${PROJECT_NAME} 
-    SYSTEM
-    PUBLIC 
+    INTERFACE 
     ${CMAKE_CURRENT_LIST_DIR}/inc
 )
 

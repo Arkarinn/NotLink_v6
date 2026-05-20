@@ -11,7 +11,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE) # 编译时输出命令
 
 add_compile_definitions(
 	"$<$<CONFIG:Debug>:DEBUG>"	# 自动添加DEBUG宏定义
-	"USE_PWR_LDO_SUPPLY"
 )
 
 # 目标

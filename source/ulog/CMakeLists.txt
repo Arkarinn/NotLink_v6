@@ -1,18 +1,19 @@
 ﻿# 项目名称
 project("ulog" C)
 
-# 添加源码
-add_library(${PROJECT_NAME} STATIC
+# 添加库
+add_library(${PROJECT_NAME}
+    INTERFACE
+)
+
+# 源码
+target_sources(${PROJECT_NAME}
+    INTERFACE
     "ulog.c"
 )
 
 # 头文件路径
 target_include_directories(${PROJECT_NAME}
-    PUBLIC
+    INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-# 链接库
-target_link_libraries(${PROJECT_NAME}
-    PUBLIC
 )

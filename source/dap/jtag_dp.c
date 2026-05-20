@@ -29,10 +29,14 @@
 
 // #include "ulog.h"
 
+#if (DAP_JTAG != 0)
+
 static uint8_t jtag_tx_buff[JTAG_SPI_FIFO_SIZE] = {0};
 static uint8_t jtag_rx_buff[JTAG_SPI_FIFO_SIZE] = {0};
 
 static const uint8_t ack_remap_table[8] = {0, 2, 1, 3, 4, 6, 5, 7}; // JTAG的回复和SWD不一样，前两位交换
+
+#endif /* (DAP_JTAG != 0) */
 
 extern dap_data_t dap_data;
 
@@ -65,7 +69,7 @@ void JTAG_Sequence(uint32_t info, const uint8_t *tdi, uint8_t *tdo)
     n_byte = (n_cycle + 7) / 8;
 
     bsp_jtag_write_tdi_tx_fifo(((tdi) ? (uint8_t *)tdi : jtag_tx_buff), n_byte);
-    bsp_jtag_generate_data_cycle(n_cycle, n_byte);
+    bsp_jtag_generate_data_cycle(n_cycle);
     bsp_jtag_read_tdo_rx_fifo((((info & JTAG_SEQUENCE_TDO) && tdo) ? tdo : jtag_rx_buff), n_byte);
 
     LL_GPIO_SetPinMode(JTAG_TMS_DO_GPIO_Port, JTAG_TMS_DO_Pin, LL_GPIO_MODE_ALTERNATE); // 外设控制
@@ -100,7 +104,7 @@ uint32_t JTAG_ReadIDCode(void)
 
     tms = 0x01;
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
-    bsp_jtag_generate_data_cycle(3U, 1U);
+    bsp_jtag_generate_data_cycle(3U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
     /* DATA ******************************************************************/
@@ -122,7 +126,7 @@ uint32_t JTAG_ReadIDCode(void)
             bsp_jtag_write_tms_tx_fifo_byte(&tms);
             bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
         }
-        bsp_jtag_generate_data_cycle(n, b);
+        bsp_jtag_generate_data_cycle(n);
         bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b); // 清理接收缓冲区
         bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
 
@@ -133,7 +137,7 @@ uint32_t JTAG_ReadIDCode(void)
     uint32_t tdi_u32 = 0xFFFFFFFF;
     bsp_jtag_write_tms_tx_fifo((uint8_t *)&tms_u32, 4); // Exit1-DR
     bsp_jtag_write_tdi_tx_fifo((uint8_t *)&tdi_u32, 4);
-    bsp_jtag_generate_data_cycle(32U, 4U);
+    bsp_jtag_generate_data_cycle(32U);
     bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, 4U); // 丢弃
     bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, 4U);
 
@@ -153,7 +157,7 @@ uint32_t JTAG_ReadIDCode(void)
 
     tms = 0x01;
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
-    bsp_jtag_generate_data_cycle(2U, 1U);
+    bsp_jtag_generate_data_cycle(2U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
     bsp_jtag_disable_transfer_tms();
@@ -191,7 +195,7 @@ void JTAG_WriteAbort(uint32_t data)
 
     tms = 0x01;
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
-    bsp_jtag_generate_data_cycle(3U, 1U);
+    bsp_jtag_generate_data_cycle(3U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
     /* DATA ******************************************************************/
@@ -213,7 +217,7 @@ void JTAG_WriteAbort(uint32_t data)
             bsp_jtag_write_tms_tx_fifo_byte(&tms);
             bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
         }
-        bsp_jtag_generate_data_cycle(n, b);
+        bsp_jtag_generate_data_cycle(n);
         bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
         bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
 
@@ -223,7 +227,7 @@ void JTAG_WriteAbort(uint32_t data)
     tdi = 0x00; // RnW=0 A2=0 A3=0
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
     bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
-    bsp_jtag_generate_data_cycle(3U, 1U);
+    bsp_jtag_generate_data_cycle(3U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
     bsp_jtag_read_tdo_rx_fifo_byte(jtag_rx_buff);
 
@@ -233,7 +237,7 @@ void JTAG_WriteAbort(uint32_t data)
         uint32_t tms_u32 = 0x00000000; // 这里不着急切换TMS
         bsp_jtag_write_tms_tx_fifo((uint8_t *)&tms_u32, 4);
         bsp_jtag_write_tdi_tx_fifo((uint8_t *)&data, 4);
-        bsp_jtag_generate_data_cycle(32U, 4U);
+        bsp_jtag_generate_data_cycle(32U);
         bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, 4U);
         bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, 4U);
 
@@ -255,7 +259,7 @@ void JTAG_WriteAbort(uint32_t data)
             }
             bsp_jtag_write_tms_tx_fifo_byte(&tms); // Exit1-DR
             bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
-            bsp_jtag_generate_data_cycle(n, b);
+            bsp_jtag_generate_data_cycle(n);
             bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
             bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
 
@@ -267,7 +271,7 @@ void JTAG_WriteAbort(uint32_t data)
         uint32_t tms_u32 = 0x80000000;                      // 必须切换TMS
         bsp_jtag_write_tms_tx_fifo((uint8_t *)&tms_u32, 4); // Exit1-DR
         bsp_jtag_write_tdi_tx_fifo((uint8_t *)&data, 4);
-        bsp_jtag_generate_data_cycle(32U, 4U);
+        bsp_jtag_generate_data_cycle(32U);
         bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, 4U);
         bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, 4U);
     }
@@ -283,7 +287,7 @@ void JTAG_WriteAbort(uint32_t data)
 
     tms = 0x01;
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
-    bsp_jtag_generate_data_cycle(2U, 1U);
+    bsp_jtag_generate_data_cycle(2U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
     bsp_jtag_disable_transfer_tms();
@@ -320,7 +324,7 @@ void JTAG_IR(uint32_t ir)
 
     tms = 0x03;
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
-    bsp_jtag_generate_data_cycle(4, 1U);
+    bsp_jtag_generate_data_cycle(4);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
     /* DATA ******************************************************************/
@@ -342,7 +346,7 @@ void JTAG_IR(uint32_t ir)
             bsp_jtag_write_tms_tx_fifo_byte(&tms);
             bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
         }
-        bsp_jtag_generate_data_cycle(n, b);
+        bsp_jtag_generate_data_cycle(n);
         bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
         bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
 
@@ -366,7 +370,7 @@ void JTAG_IR(uint32_t ir)
                 bsp_jtag_write_tms_tx_fifo_byte(&tms);
                 bsp_jtag_write_tdi_tx_fifo_byte(&tdi); // 填充此设备的IR
             }
-            bsp_jtag_generate_data_cycle(n, b);
+            bsp_jtag_generate_data_cycle(n);
             bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
             bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
         }
@@ -390,7 +394,7 @@ void JTAG_IR(uint32_t ir)
             }
             bsp_jtag_write_tms_tx_fifo_byte(&tms);
             bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
-            bsp_jtag_generate_data_cycle(n, b);
+            bsp_jtag_generate_data_cycle(n);
             bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
             bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
 
@@ -416,7 +420,7 @@ void JTAG_IR(uint32_t ir)
         tdi = ir >> ((b - 1) * 8);
         bsp_jtag_write_tms_tx_fifo_byte(&tms); // 最后一个周期，1进入Exit1-IR
         bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
-        bsp_jtag_generate_data_cycle(n, b);
+        bsp_jtag_generate_data_cycle(n);
         bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
         bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
     }
@@ -432,7 +436,7 @@ void JTAG_IR(uint32_t ir)
 
     tms = 0x01;
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
-    bsp_jtag_generate_data_cycle(2U, 1U);
+    bsp_jtag_generate_data_cycle(2U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
     bsp_jtag_disable_transfer_tms();
@@ -471,7 +475,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
 
     tms = 0x01;
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
-    bsp_jtag_generate_data_cycle(3U, 1U);
+    bsp_jtag_generate_data_cycle(3U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
     /* DATA ******************************************************************/
@@ -493,7 +497,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
             bsp_jtag_write_tms_tx_fifo_byte(&tms);
             bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
         }
-        bsp_jtag_generate_data_cycle(n, b);
+        bsp_jtag_generate_data_cycle(n);
         bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
         bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
 
@@ -504,7 +508,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
     tdi = request >> 1; // APnDP无意义(由IR决定)，所以去掉一位
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
     bsp_jtag_write_tdi_tx_fifo_byte(&tdi); // 发送req
-    bsp_jtag_generate_data_cycle(3U, 1U);
+    bsp_jtag_generate_data_cycle(3U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
     bsp_jtag_read_tdo_rx_fifo_byte(jtag_rx_buff + 1);
     ack = ack_remap_table[jtag_rx_buff[0 + 1] & 0x07]; // 通过映射表快速转换
@@ -521,7 +525,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
 
         tms = 0x03;                            // 011 LSB
         bsp_jtag_write_tms_tx_fifo_byte(&tms); // Idle
-        bsp_jtag_generate_data_cycle(3U, 1U);
+        bsp_jtag_generate_data_cycle(3U);
         bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
         goto idle_cycle;
@@ -540,7 +544,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
             uint32_t tdi_u32 = 0xFFFFFFFF;
             bsp_jtag_write_tms_tx_fifo((uint8_t *)&tms_u32, 4);
             bsp_jtag_write_tdi_tx_fifo((uint8_t *)&tdi_u32, 4);
-            bsp_jtag_generate_data_cycle(32U, 4U);
+            bsp_jtag_generate_data_cycle(32U);
             bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, 4U);
             bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, 4U);
 
@@ -570,7 +574,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
                 }
                 bsp_jtag_write_tms_tx_fifo_byte(&tms);
                 bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
-                bsp_jtag_generate_data_cycle(n, b);
+                bsp_jtag_generate_data_cycle(n);
                 bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
                 bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
 
@@ -585,7 +589,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
             uint32_t tdi_u32 = 0xFFFFFFFF;
             bsp_jtag_write_tms_tx_fifo((uint8_t *)&tms_u32, 4); // Exit1-DR
             bsp_jtag_write_tdi_tx_fifo((uint8_t *)&tdi_u32, 4);
-            bsp_jtag_generate_data_cycle(32U, 4U);
+            bsp_jtag_generate_data_cycle(32U);
             bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, 4U);
             bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, 4U);
 
@@ -609,7 +613,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
             uint32_t tdi_u32 = (data != 0) ? (*data) : 0x00000000;
             bsp_jtag_write_tms_tx_fifo((uint8_t *)&tms_u32, 4);
             bsp_jtag_write_tdi_tx_fifo((uint8_t *)&tdi_u32, 4); // 写入数据
-            bsp_jtag_generate_data_cycle(32U, 4U);
+            bsp_jtag_generate_data_cycle(32U);
             bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, 4U);
             bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, 4U);
 
@@ -632,7 +636,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
                 }
                 bsp_jtag_write_tms_tx_fifo_byte(&tms);
                 bsp_jtag_write_tdi_tx_fifo_byte(&tdi);
-                bsp_jtag_generate_data_cycle(n, b);
+                bsp_jtag_generate_data_cycle(n);
                 bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
                 bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
 
@@ -645,7 +649,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
             uint32_t tdi_u32 = 0xFFFFFFFF;
             bsp_jtag_write_tms_tx_fifo((uint8_t *)&tms_u32, 4); // Exit1-DR
             bsp_jtag_write_tdi_tx_fifo((uint8_t *)&tdi_u32, 4);
-            bsp_jtag_generate_data_cycle(32U, 4U);
+            bsp_jtag_generate_data_cycle(32U);
             bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, 4U);
             bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, 4U);
         }
@@ -662,7 +666,7 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
 
     tms = 0x01;
     bsp_jtag_write_tms_tx_fifo_byte(&tms);
-    bsp_jtag_generate_data_cycle(2U, 1U);
+    bsp_jtag_generate_data_cycle(2U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
 idle_cycle:
@@ -687,7 +691,7 @@ idle_cycle:
         {
             bsp_jtag_write_tms_tx_fifo_byte(&tms);
         }
-        bsp_jtag_generate_data_cycle(n, b);
+        bsp_jtag_generate_data_cycle(n);
         bsp_jtag_read_tms_rx_fifo(jtag_rx_buff, b);
 
         n_cycle -= n;

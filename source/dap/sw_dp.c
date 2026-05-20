@@ -197,7 +197,11 @@ void SWJ_Sequence(uint32_t count, const uint8_t *data)
         n_bytes = (n_cycle + 7U) / 8U;
 
         bsp_jtag_write_tms_tx_fifo(data ? (uint8_t *)data : swd_tx_buff, n_bytes);
-        bsp_jtag_generate_data_cycle(n_cycle, n_bytes);
+#ifdef CONFIG_OPTIMIZE_TMS_HARD_OE
+        bsp_jtag_generate_data_cycle_with_oe(n_cycle, 0U);
+#else  /* CONFIG_OPTIMIZE_TMS_HARD_OE */
+        bsp_jtag_generate_data_cycle(n_cycle);
+#endif /* CONFIG_OPTIMIZE_TMS_HARD_OE */
         bsp_jtag_read_tms_rx_fifo(swd_rx_buff, n_bytes);
 
         count = (count - n_cycle);
@@ -258,7 +262,18 @@ void SWD_Sequence(uint32_t info, const uint8_t *swdo, uint8_t *swdi)
     }
 
     bsp_jtag_write_tms_tx_fifo(do_buff, n_byte);
-    bsp_jtag_generate_data_cycle(n_cycle, n_byte);
+#ifdef CONFIG_OPTIMIZE_TMS_HARD_OE
+    if (info & SWD_SEQUENCE_DIN)
+    {
+        bsp_jtag_generate_data_cycle_with_oe(0U, n_cycle);
+    }
+    else
+    {
+        bsp_jtag_generate_data_cycle_with_oe(n_cycle, 0U);
+    }
+#else  /* CONFIG_OPTIMIZE_TMS_HARD_OE */
+    bsp_jtag_generate_data_cycle(n_cycle);
+#endif /* CONFIG_OPTIMIZE_TMS_HARD_OE */
     bsp_jtag_read_tms_rx_fifo(di_buff, n_byte);
 
 seq_exit:
@@ -280,6 +295,121 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
 {
     // data可能为NULL
 
+#ifdef CONFIG_OPTIMIZE_TMS_HARD_OE
+
+    bsp_jtag_check_gpio_mode(0U);
+
+    bsp_jtag_enable_spi_tms();
+    bsp_jtag_enable_transfer_tms();
+
+    uint8_t req_raw = request & 0x0FU;
+    uint8_t req_parity = parity_table[req_raw];                 /* 奇偶校验，奇1偶0 */
+    uint8_t req = 0x81U | (req_raw << 1U) | (req_parity << 5U); /* req 8bit */
+
+    uint8_t *data_u8p = (uint8_t *)data;
+    uint32_t read_n_write = (request & DAP_TRANSFER_RnW) ? 1U : 0U;             /* 读or写 */
+    uint32_t n_cycle = 3U + dap_data.swd_conf.turnaround * (2U - read_n_write); /* 3 ACK + trn */
+    uint32_t n_bytes = (8U + n_cycle + 7U) / 8U;
+
+    swd_tx_buff[0] = req;
+    bsp_jtag_write_tms_tx_fifo(&swd_tx_buff[0], n_bytes); // Req+ACK塞到FIFO里
+    bsp_jtag_generate_data_cycle_with_oe(8U, n_cycle);    // 写8bit收ack
+
+    // do some thing
+
+    uint8_t data_parity = 0x01 & (parity_table[data_u8p[0]] + //
+                                  parity_table[data_u8p[1]] + //
+                                  parity_table[data_u8p[2]] + //
+                                  parity_table[data_u8p[3]]); //
+    swd_tx_buff[0] = data_u8p[0];
+    swd_tx_buff[1] = data_u8p[1];
+    swd_tx_buff[2] = data_u8p[2];
+    swd_tx_buff[3] = data_u8p[3];
+    swd_tx_buff[4] = data_parity;
+
+    bsp_jtag_read_tms_rx_fifo(&swd_rx_buff[0], n_bytes);                          // 等待传输完成
+    uint8_t ack = (swd_rx_buff[0U + 1U] >> dap_data.swd_conf.turnaround) & 0x07U; // TRN最大4bit
+
+    n_cycle = read_n_write ? (33U + dap_data.swd_conf.turnaround) : 33U;
+    n_bytes = read_n_write ? ((33U + dap_data.swd_conf.turnaround + 7U) / 8U) : ((33U + 7U) / 8u);
+
+    if (read_n_write)
+    {
+        switch (ack)
+        {
+        case DAP_TRANSFER_OK:
+            bsp_jtag_write_tms_tx_fifo(&swd_tx_buff[0], n_bytes);
+            bsp_jtag_generate_data_cycle_with_oe(0U, n_cycle);
+
+            // do some thing
+
+            bsp_jtag_read_tms_rx_fifo(&swd_rx_buff[0], n_bytes);
+            data_u8p[0] = swd_rx_buff[0];
+            data_u8p[1] = swd_rx_buff[1];
+            data_u8p[2] = swd_rx_buff[2];
+            data_u8p[3] = swd_rx_buff[3];
+
+            break;
+        case DAP_TRANSFER_WAIT:
+        case DAP_TRANSFER_FAULT:
+            if (dap_data.swd_conf.data_phase) // 始终发送数据周期
+            {
+                bsp_jtag_write_tms_tx_fifo(&swd_tx_buff[0], n_bytes);
+                bsp_jtag_generate_data_cycle_with_oe(0U, n_cycle);
+                bsp_jtag_read_tms_rx_fifo(&swd_rx_buff[0], n_bytes);
+            }
+            else
+            {
+                bsp_jtag_write_tms_tx_fifo_byte(&swd_tx_buff[0]);
+                bsp_jtag_generate_data_cycle_with_oe(dap_data.swd_conf.turnaround, 0U);
+                bsp_jtag_read_tms_rx_fifo_byte(&swd_rx_buff[0]);
+            }
+            break;
+        default:
+            bsp_jtag_write_tms_tx_fifo(swd_tx_buff, n_bytes);
+            bsp_jtag_generate_data_cycle_with_oe(0U, n_cycle);
+            bsp_jtag_read_tms_rx_fifo(swd_rx_buff, n_bytes);
+            break;
+        }
+    }
+    else
+    {
+        switch (ack)
+        {
+        case DAP_TRANSFER_OK:
+            bsp_jtag_write_tms_tx_fifo(&swd_tx_buff[0], n_bytes);
+            bsp_jtag_generate_data_cycle_with_oe(n_cycle, 0U);
+
+            // do some thing
+
+            bsp_jtag_read_tms_rx_fifo(&swd_rx_buff[0], n_bytes);
+
+            break;
+        case DAP_TRANSFER_WAIT:
+        case DAP_TRANSFER_FAULT:
+            if (dap_data.swd_conf.data_phase) // 始终发送数据周期
+            {
+                bsp_jtag_write_tms_tx_fifo(&swd_tx_buff[0], n_bytes);
+                bsp_jtag_generate_data_cycle_with_oe(n_cycle, 0U);
+                bsp_jtag_read_tms_rx_fifo(&swd_rx_buff[0], n_bytes);
+            }
+            break;
+        default:
+            bsp_jtag_write_tms_tx_fifo(swd_tx_buff, n_bytes);
+            bsp_jtag_generate_data_cycle_with_oe(n_cycle, 0U);
+            bsp_jtag_read_tms_rx_fifo(swd_rx_buff, n_bytes);
+            break;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////
+    bsp_jtag_disable_transfer_tms();
+    bsp_jtag_disable_spi_tms();
+
+    return ack;
+
+#else /* CONFIG_OPTIMIZE_TMS_HARD_OE */
+
     bsp_jtag_check_gpio_mode(0U);
 
     bsp_jtag_enable_spi_tms();
@@ -292,7 +422,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
     /* Request ***************************************************************/
 
     bsp_jtag_write_tms_tx_fifo_byte(&req); // 发request
-    bsp_jtag_generate_data_cycle(8U, 1U);
+    bsp_jtag_generate_data_cycle(8U);
 
     uint32_t data_val = (data) ? (*data) : (0U);
     uint8_t *data_val_u8p = (uint8_t *)&data_val;
@@ -306,7 +436,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
 
     /* ACK *******************************************************************/
 
-    bsp_jtag_generate_data_cycle(ack_n_cycle, ack_n_bytes);
+    bsp_jtag_generate_data_cycle(ack_n_cycle);
 
     uint8_t data_parity;
     uint32_t data_n_bytes;
@@ -342,7 +472,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
         if (read_n_write) // read
         {
             bsp_jtag_write_tms_tx_fifo(swd_tx_buff, data_n_bytes);
-            bsp_jtag_generate_data_cycle(data_n_cycle, data_n_bytes);
+            bsp_jtag_generate_data_cycle(data_n_cycle);
 #if 0
             // 一边收一边计算校验值
             bsp_jtag_read_tms_rx_fifo_byte(&data_val_u8p[0]);
@@ -385,7 +515,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
 
                 // 空周期，必须发送0
                 bsp_jtag_write_tms_tx_fifo(swd_tx_buff, n_bytes);
-                bsp_jtag_generate_data_cycle(n_cycle, n_bytes);
+                bsp_jtag_generate_data_cycle(n_cycle);
                 bsp_jtag_read_tms_rx_fifo(swd_rx_buff, n_bytes);
 
                 count = (count - n_cycle);
@@ -398,7 +528,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
             {
                 bsp_jtag_write_tms_tx_fifo(data_val_u8p, 4U);
                 bsp_jtag_write_tms_tx_fifo_byte(&data_parity);
-                bsp_jtag_generate_data_cycle(32U + 1U, 5U);
+                bsp_jtag_generate_data_cycle(32U + 1U);
                 bsp_jtag_read_tms_rx_fifo(swd_rx_buff, 5U);
 
                 uint32_t count = dap_data.transfer.idle_cycles;
@@ -410,7 +540,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
 
                     // 空周期，必须发送0
                     bsp_jtag_write_tms_tx_fifo(swd_tx_buff, n_bytes);
-                    bsp_jtag_generate_data_cycle(n_cycle, n_bytes);
+                    bsp_jtag_generate_data_cycle(n_cycle);
                     bsp_jtag_read_tms_rx_fifo(swd_rx_buff, n_bytes);
 
                     count = (count - n_cycle);
@@ -421,7 +551,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
                 // 如果idle_cycles小于7，可以和校验位一起发送
                 bsp_jtag_write_tms_tx_fifo(data_val_u8p, 4U);
                 bsp_jtag_write_tms_tx_fifo_byte(&data_parity);
-                bsp_jtag_generate_data_cycle(32U + 1U + dap_data.transfer.idle_cycles, 5U);
+                bsp_jtag_generate_data_cycle(32U + 1U + dap_data.transfer.idle_cycles);
                 bsp_jtag_read_tms_rx_fifo(swd_rx_buff, 5U);
             }
         }
@@ -440,7 +570,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
             if (read_n_write) // read
             {
                 bsp_jtag_write_tms_tx_fifo(swd_tx_buff, data_n_bytes);
-                bsp_jtag_generate_data_cycle(data_n_cycle, data_n_bytes);
+                bsp_jtag_generate_data_cycle(data_n_cycle);
                 bsp_jtag_read_tms_rx_fifo(swd_rx_buff, data_n_bytes);
 
                 JTAG_TMS_OEN_HIGH(); // 重新控制总线
@@ -450,7 +580,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
                 JTAG_TMS_OEN_HIGH(); // 重新控制总线
 
                 bsp_jtag_write_tms_tx_fifo(swd_tx_buff, 5U);
-                bsp_jtag_generate_data_cycle(32U + 1U, 5U); //
+                bsp_jtag_generate_data_cycle(32U + 1U); //
                 bsp_jtag_read_tms_rx_fifo(swd_rx_buff, 5U);
             }
         }
@@ -459,7 +589,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
             if (read_n_write) // 发送转换周期
             {
                 bsp_jtag_write_tms_tx_fifo_byte(swd_tx_buff);
-                bsp_jtag_generate_data_cycle(dap_data.swd_conf.turnaround, 1U); // 转换方向[0, 4]
+                bsp_jtag_generate_data_cycle(dap_data.swd_conf.turnaround); // 转换方向[0, 4]
                 bsp_jtag_read_tms_rx_fifo_byte(swd_rx_buff);
             }
             JTAG_TMS_OEN_HIGH(); // 重新控制总线
@@ -467,7 +597,7 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
         break;
     default:
         bsp_jtag_write_tms_tx_fifo(swd_tx_buff, 5U);
-        bsp_jtag_generate_data_cycle(32U + 1U + dap_data.swd_conf.turnaround, 5U); // [33, 37]
+        bsp_jtag_generate_data_cycle(32U + 1U + dap_data.swd_conf.turnaround); // [33, 37]
         bsp_jtag_read_tms_rx_fifo(swd_rx_buff, 5U);
 
         JTAG_TMS_OEN_HIGH(); // 重新控制总线
@@ -480,6 +610,8 @@ uint8_t SWD_Transfer(uint32_t request, uint32_t *data)
     bsp_jtag_disable_spi_tms();
 
     return ack;
+
+#endif /* CONFIG_OPTIMIZE_TMS_HARD_OE */
 }
 
 #endif /* (DAP_SWD != 0) */

@@ -5,13 +5,18 @@ project("dap" C ASM)
 file(GLOB SOURCE_FILES "*.c")
 
 # 添加源码
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME}
+    INTERFACE
+)
+
+target_sources(${PROJECT_NAME}
+    INTERFACE
     ${SOURCE_FILES}
 )
 
 # 链接库
 target_link_libraries(${PROJECT_NAME}
-    PUBLIC
+    INTERFACE
     "bsp"
     "cmsis"
     "ulog"
@@ -19,6 +24,6 @@ target_link_libraries(${PROJECT_NAME}
 
 # 头文件路径
 target_include_directories(${PROJECT_NAME}
-    PUBLIC
+    INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
