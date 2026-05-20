@@ -266,12 +266,13 @@ void bsp_jtag_enable_port(jtag_port_t port)
         LL_GPIO_SetPinMode(JTAG_TCK_M_GPIO_Port, JTAG_TCK_M_Pin, LL_GPIO_MODE_ALTERNATE);       //
 
 #ifdef CONFIG_OPTIMIZE_TMS_HARD_OE
-
         // TMS_DIR->数据方向，硬件控制
         jtag_set_gpio_af_mode(JTAG_TMS_DIR_GPIO_Port, JTAG_TMS_DIR_Pin, LL_GPIO_AF_2);        // SWD TIM4_CH2
         LL_GPIO_SetPinMode(JTAG_TMS_DIR_GPIO_Port, JTAG_TMS_DIR_Pin, LL_GPIO_MODE_ALTERNATE); //
-
 #endif
+
+        bsp_jtag_enable_spi_tms();
+        bsp_jtag_enable_transfer_tms();
 
         break;
     case JTAG_PORT_JTAG:
@@ -554,6 +555,15 @@ void bsp_jtag_deinit(void)
     /* 复用回默认状态 */
     jtag_set_gpio_af_mode(JTAG_TDI_TXD_GPIO_Port, JTAG_TDI_TXD_Pin, LL_GPIO_AF_8);     // COM UART4_TXD
     jtag_set_gpio_af_mode(JTAG_DBGRQ_RXD_GPIO_Port, JTAG_DBGRQ_RXD_Pin, LL_GPIO_AF_8); // COM UART4_RXD
+
+    bsp_jtag_disable_transfer_tms();
+    bsp_jtag_disable_spi_tms();
+
+    bsp_jtag_disable_transfer_tdi_tdo();
+    bsp_jtag_disable_spi_tdi_tdo();
+
+    LL_TIM_DisableCounter(TIM8);
+    LL_TIM_DisableCounter(TIM4);
 }
 
 /**
@@ -633,7 +643,7 @@ uint32_t bsp_jtag_set_tck_clock(uint32_t freq)
  *
  * @param count Must be less than 8U * JTAG_SPI_FIFO_SIZE
  */
-void bsp_jtag_generate_data_cycle_with_oe(uint32_t count_s1, uint32_t count_s2)
+__INLINE void bsp_jtag_generate_data_cycle_with_oe(uint32_t count_s1, uint32_t count_s2)
 {
     uint32_t n_bytes = (count_s1 + count_s2 + 7) / 8;
 
@@ -710,7 +720,7 @@ void bsp_jtag_wait_data_cycle(void)
  * @param data
  * @param n_bytes
  */
-void bsp_jtag_write_tms_tx_fifo(uint8_t *data_buff, uint32_t n_bytes)
+__INLINE void bsp_jtag_write_tms_tx_fifo(uint8_t *data_buff, uint32_t n_bytes)
 {
     while (n_bytes)
     {
@@ -725,7 +735,7 @@ void bsp_jtag_write_tms_tx_fifo(uint8_t *data_buff, uint32_t n_bytes)
  *
  * @param data_buff
  */
-void bsp_jtag_write_tms_tx_fifo_byte(uint8_t *data_buff)
+__INLINE void bsp_jtag_write_tms_tx_fifo_byte(uint8_t *data_buff)
 {
     LL_SPI_TransmitData8(SPI1, *data_buff);
 }
@@ -736,7 +746,7 @@ void bsp_jtag_write_tms_tx_fifo_byte(uint8_t *data_buff)
  * @param data_buff
  * @param n_bytes
  */
-void bsp_jtag_read_tms_rx_fifo(uint8_t *data_buff, uint32_t n_bytes)
+__INLINE void bsp_jtag_read_tms_rx_fifo(uint8_t *data_buff, uint32_t n_bytes)
 {
     while (n_bytes)
     {
@@ -754,7 +764,7 @@ void bsp_jtag_read_tms_rx_fifo(uint8_t *data_buff, uint32_t n_bytes)
  *
  * @param data_buff
  */
-void bsp_jtag_read_tms_rx_fifo_byte(uint8_t *data_buff)
+__INLINE void bsp_jtag_read_tms_rx_fifo_byte(uint8_t *data_buff)
 {
     while (LL_SPI_IsActiveFlag_RXP(SPI1) != 1U)
     {
