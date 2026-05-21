@@ -8,6 +8,10 @@ extern uint32_t _sbss;   /* bss段开头 */
 extern uint32_t _ebss;   /* bss段结尾 */
 extern uint32_t _estack; /* 堆栈结尾 */
 
+extern uint32_t _siitcm; /* itcm段初始值所在地址 */
+extern uint32_t _sitcm;  /* itcm段开头 */
+extern uint32_t _eitcm;  /* itcm段结尾 */
+
 extern void SystemInit(void);
 extern void ExitRun0Mode(void);
 
@@ -56,6 +60,9 @@ void Reset_Handler(void)
     /* 复制变量 */
     CopyData((uint32_t)&_sidata, (uint32_t)&_sdata, (uint32_t)&_edata);
     FillZero((uint32_t)&_sbss, (uint32_t)&_ebss);
+
+    /* 复制ITCM数据 */
+    CopyData((uint32_t)&_siitcm, (uint32_t)&_sitcm, (uint32_t)&_eitcm);
 
     __libc_init_array();
     main();

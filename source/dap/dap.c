@@ -422,6 +422,7 @@ static uint32_t DAP_Connect(const uint8_t *request, uint8_t *response)
     case DAP_PORT_SWD:
         dap_data.debug_port = DAP_PORT_SWD;
         bsp_jtag_enable_port(JTAG_PORT_SWD);
+        dap_data.rx_data_remain = 0; // SPI Disable, all data clean
         port_name = "SWD";
         break;
 #endif
@@ -457,6 +458,7 @@ static uint32_t DAP_Disconnect(uint8_t *response)
 {
     dap_data.gpio_mode = 1;
     dap_data.debug_port = DAP_PORT_DISABLED;
+    dap_data.rx_data_remain = 0;
     bsp_jtag_enable_port(JTAG_PORT_GPIO);
     *response = DAP_OK;
     return (1U);

@@ -36,11 +36,7 @@ static uint8_t jtag_rx_buff[JTAG_SPI_FIFO_SIZE] = {0};
 
 static const uint8_t ack_remap_table[8] = {0, 2, 1, 3, 4, 6, 5, 7}; // JTAG的回复和SWD不一样，前两位交换
 
-#endif /* (DAP_JTAG != 0) */
-
 extern dap_data_t dap_data;
-
-#if (DAP_JTAG != 0)
 
 /**
  * @brief Generate JTAG Sequence
@@ -55,8 +51,8 @@ void JTAG_Sequence(uint32_t info, const uint8_t *tdi, uint8_t *tdo)
 
     bsp_jtag_check_gpio_mode(0U);
 
-    bsp_jtag_enable_spi_tdi_tdo();
-    bsp_jtag_enable_transfer_tdi_tdo();
+    // TDO/TDI only
+    bsp_jtag_disable_transfer_tms();
 
     JTAG_TMS_OUT((info & JTAG_SEQUENCE_TMS) ? 1U : 0U);                              // TMS固定
     LL_GPIO_SetPinMode(JTAG_TMS_DO_GPIO_Port, JTAG_TMS_DO_Pin, LL_GPIO_MODE_OUTPUT); // 手动控制
@@ -73,8 +69,9 @@ void JTAG_Sequence(uint32_t info, const uint8_t *tdi, uint8_t *tdo)
     bsp_jtag_read_tdo_rx_fifo((((info & JTAG_SEQUENCE_TDO) && tdo) ? tdo : jtag_rx_buff), n_byte);
 
     LL_GPIO_SetPinMode(JTAG_TMS_DO_GPIO_Port, JTAG_TMS_DO_Pin, LL_GPIO_MODE_ALTERNATE); // 外设控制
-    bsp_jtag_disable_transfer_tdi_tdo();
-    bsp_jtag_disable_spi_tdi_tdo();
+
+    // Enable all
+    bsp_jtag_enable_transfer_tms();
 }
 
 /**
@@ -89,12 +86,10 @@ uint32_t JTAG_ReadIDCode(void)
 
     bsp_jtag_check_gpio_mode(0U);
 
-    bsp_jtag_enable_spi_tms();
-    bsp_jtag_enable_spi_tdi_tdo();
-
     /* TMS *******************************************************************/
 
-    bsp_jtag_enable_transfer_tms();
+    // TMS only
+    bsp_jtag_disable_transfer_tdi_tdo();
 
     /*  Idle            1->
         Select-DR-Scan  0->
@@ -111,7 +106,9 @@ uint32_t JTAG_ReadIDCode(void)
 
     /*  TDO <- (before) <- (device) <- (after) <- TDI */
 
+    // TMS and TDO/TDI
     bsp_jtag_enable_transfer_tdi_tdo();
+    bsp_jtag_enable_transfer_tms();
 
     tms = 0x00; // 保持状态机
     tdi = 0xFF; // 无意义，其他设备处于bypass状态，并且延迟一个周期
@@ -146,7 +143,9 @@ uint32_t JTAG_ReadIDCode(void)
                        ((uint32_t)jtag_rx_buff[2] << 16U) |
                        ((uint32_t)jtag_rx_buff[3] << 24U);
 
+    // TMS only
     bsp_jtag_disable_transfer_tdi_tdo();
+    bsp_jtag_enable_transfer_tms();
 
     /* TMS *******************************************************************/
 
@@ -160,10 +159,8 @@ uint32_t JTAG_ReadIDCode(void)
     bsp_jtag_generate_data_cycle(2U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
-    bsp_jtag_disable_transfer_tms();
-
-    bsp_jtag_disable_spi_tms();
-    bsp_jtag_disable_spi_tdi_tdo();
+    // Enable all
+    bsp_jtag_enable_transfer_tdi_tdo();
 
     return id_code;
 }
@@ -180,12 +177,10 @@ void JTAG_WriteAbort(uint32_t data)
 
     bsp_jtag_check_gpio_mode(0U);
 
-    bsp_jtag_enable_spi_tms();
-    bsp_jtag_enable_spi_tdi_tdo();
-
     /* TMS *******************************************************************/
 
-    bsp_jtag_enable_transfer_tms();
+    // TMS only
+    bsp_jtag_disable_transfer_tdi_tdo();
 
     /*  Idle            1->
         Select-DR-Scan  0->
@@ -202,7 +197,9 @@ void JTAG_WriteAbort(uint32_t data)
 
     /*  TDO <- (before) <- (device) <- (after) <- TDI */
 
+    // TMS and TDO/TDI
     bsp_jtag_enable_transfer_tdi_tdo();
+    bsp_jtag_enable_transfer_tms();
 
     tms = 0x00; // 保持状态机
     tdi = 0xFF; // 无意义，其他设备处于bypass状态，并且延迟一个周期
@@ -276,7 +273,9 @@ void JTAG_WriteAbort(uint32_t data)
         bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, 4U);
     }
 
+    // TMS only
     bsp_jtag_disable_transfer_tdi_tdo();
+    bsp_jtag_enable_transfer_tms();
 
     /* TMS *******************************************************************/
 
@@ -290,10 +289,8 @@ void JTAG_WriteAbort(uint32_t data)
     bsp_jtag_generate_data_cycle(2U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
-    bsp_jtag_disable_transfer_tms();
-
-    bsp_jtag_disable_spi_tms();
-    bsp_jtag_disable_spi_tdi_tdo();
+    // Enable all
+    bsp_jtag_enable_transfer_tdi_tdo();
 }
 
 /**
@@ -308,12 +305,10 @@ void JTAG_IR(uint32_t ir)
 
     bsp_jtag_check_gpio_mode(0U);
 
-    bsp_jtag_enable_spi_tms();
-    bsp_jtag_enable_spi_tdi_tdo();
-
     /* TMS *******************************************************************/
 
-    bsp_jtag_enable_transfer_tms();
+    // TMS only
+    bsp_jtag_disable_transfer_tdi_tdo();
 
     /*  Idle            1->
         Select-DR-Scan  1->
@@ -331,7 +326,9 @@ void JTAG_IR(uint32_t ir)
 
     /*  TDO <- (before) <- (device) <- (after) <- TDI */
 
+    // TMS and TDO/TDI
     bsp_jtag_enable_transfer_tdi_tdo();
+    bsp_jtag_enable_transfer_tms();
 
     tms = 0x00; // 保持状态机
     tdi = 0xFF; // 填充菊花链前的IR为0xFF，即bypass
@@ -425,7 +422,9 @@ void JTAG_IR(uint32_t ir)
         bsp_jtag_read_tdo_rx_fifo(jtag_rx_buff, b);
     }
 
+    // TMS only
     bsp_jtag_disable_transfer_tdi_tdo();
+    bsp_jtag_enable_transfer_tms();
 
     /* TMS *******************************************************************/
 
@@ -439,10 +438,8 @@ void JTAG_IR(uint32_t ir)
     bsp_jtag_generate_data_cycle(2U);
     bsp_jtag_read_tms_rx_fifo_byte(jtag_rx_buff);
 
-    bsp_jtag_disable_transfer_tms();
-
-    bsp_jtag_disable_spi_tms();
-    bsp_jtag_disable_spi_tdi_tdo();
+    // Enable all
+    bsp_jtag_enable_transfer_tdi_tdo();
 }
 
 /**
@@ -460,12 +457,10 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
 
     bsp_jtag_check_gpio_mode(0U);
 
-    bsp_jtag_enable_spi_tms();
-    bsp_jtag_enable_spi_tdi_tdo();
-
     /* TMS *******************************************************************/
 
-    bsp_jtag_enable_transfer_tms();
+    // TMS only
+    bsp_jtag_disable_transfer_tdi_tdo();
 
     /*  Idle            1->
         Select-DR-Scan  0->
@@ -482,6 +477,8 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
 
     /*  TDO <- (before) <- (device) <- (after) <- TDI */
 
+    // TMS and TDO/TDI
+    bsp_jtag_enable_transfer_tms();
     bsp_jtag_enable_transfer_tdi_tdo();
 
     tms = 0x00; // 保持状态机
@@ -515,7 +512,9 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
 
     if (ack != DAP_TRANSFER_OK)
     {
+        // TMS only
         bsp_jtag_disable_transfer_tdi_tdo();
+        bsp_jtag_enable_transfer_tms();
 
         /*  Shift-DR    1->
             Exit1-DR    1->
@@ -657,7 +656,9 @@ uint8_t JTAG_Transfer(uint32_t request, uint32_t *data)
 
     /* TMS *******************************************************************/
 
+    // TMS only
     bsp_jtag_disable_transfer_tdi_tdo();
+    bsp_jtag_enable_transfer_tms();
 
     /*  Exit1-DR    1->
         Update-DR   0->
@@ -697,10 +698,7 @@ idle_cycle:
         n_cycle -= n;
     }
 
-    bsp_jtag_disable_transfer_tms();
-
-    bsp_jtag_disable_spi_tms();
-    bsp_jtag_disable_spi_tdi_tdo();
+    bsp_jtag_enable_transfer_tdi_tdo();
 
     return ack;
 }

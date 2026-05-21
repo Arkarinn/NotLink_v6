@@ -192,11 +192,9 @@ void bsp_jtag_disable_vout(void);
 uint32_t bsp_jtag_set_tck_clock(uint32_t freq);
 #ifdef CONFIG_OPTIMIZE_TMS_HARD_OE
 void bsp_jtag_generate_data_cycle_with_oe(uint32_t count_s1, uint32_t count_s2);
-#else
-void bsp_jtag_generate_data_cycle(uint32_t count);
 #endif
+void bsp_jtag_generate_data_cycle(uint32_t count);
 void bsp_jtag_wait_data_cycle(void);
-void bsp_jtag_generate_dummy_cycle(uint32_t count);
 void bsp_jtag_write_tms_tx_fifo(uint8_t *data_buff, uint32_t n_bytes);
 void bsp_jtag_write_tms_tx_fifo_byte(uint8_t *data_buff);
 void bsp_jtag_read_tms_rx_fifo(uint8_t *data_buff, uint32_t n_bytes);

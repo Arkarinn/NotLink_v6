@@ -23,7 +23,7 @@
 #endif
 
 /* 数据收发区域，DMA工作 attribute data into no cache ram */
-#define USB_NOCACHE_RAM_SECTION __attribute__((section(".ram_d2")))
+#define USB_NOCACHE_RAM_SECTION __attribute__((section(".no_cache_ram")))
 
 /* use usb_memcpy default for high performance but cost more flash memory.
  * And, arm libc has a bug that memcpy() may cause data misalignment when the size is not a multiple of 4.

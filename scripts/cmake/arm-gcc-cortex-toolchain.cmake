@@ -37,7 +37,7 @@ set(CMAKE_EXECUTABLE_SUFFIX_CXX     ".elf")
 set(CMAKE_COMMON_FLAGS "-Wall -Wextra -Wshadow -Wpedantic -Wdouble-promotion")
 set(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -ffunction-sections -fdata-sections")
 set(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -Wno-unused-parameter -Wno-unused-function")
-set(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -mno-unaligned-access -fno-builtin")
+set(CMAKE_COMMON_FLAGS "${CMAKE_COMMON_FLAGS} -mno-unaligned-access -fno-builtin -flto")
 
 set(CMAKE_C_FLAGS 	"${MCPU_FLAGS} ${VFP_FLAGS} ${CMAKE_COMMON_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -lstdc++ -lsupc++ -fno-rtti -fno-exceptions -fno-threadsafe-statics")

@@ -138,6 +138,20 @@ void sys_mpu_config(void)
                             | LL_MPU_ACCESS_NOT_SHAREABLE       // S 不共享
     );
 
+#ifdef CONFIG_APP_WITHOUT_BOOT
+    /* AXIRAM */
+    LL_MPU_ConfigRegion(region++,                               // AXIRAM，程序执行区域，只读
+                        0x00,                                   // 子区域全部使能
+                        D1_AXISRAM_BASE,                        // 起始地址，AXIRAM
+                        LL_MPU_REGION_SIZE_512KB                // 空间大小，512K
+                            | LL_MPU_TEX_LEVEL0                 // TEX0
+                            | LL_MPU_REGION_FULL_ACCESS         // 全部可访问
+                            | LL_MPU_INSTRUCTION_ACCESS_DISABLE // 不可执行
+                            | LL_MPU_ACCESS_NOT_CACHEABLE       // C 关CACHE
+                            | LL_MPU_ACCESS_BUFFERABLE          // B 开缓冲
+                            | LL_MPU_ACCESS_NOT_SHAREABLE       // S 不共享
+    );
+#else
     /* AXIRAM */
     LL_MPU_ConfigRegion(region++,                              // AXIRAM，程序执行区域，只读
                         0x00,                                  // 子区域全部使能
@@ -150,6 +164,7 @@ void sys_mpu_config(void)
                             | LL_MPU_ACCESS_BUFFERABLE         // B 开缓冲
                             | LL_MPU_ACCESS_NOT_SHAREABLE      // S 不共享
     );
+#endif
 
     /* D2SRAM */
     LL_MPU_ConfigRegion(region++,                               // D2SRAM，数据区域

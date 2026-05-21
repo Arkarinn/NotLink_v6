@@ -62,6 +62,21 @@ SECTIONS
         . = ALIGN(4);
     } >FLASH
 
+    _siitcm = LOADADDR(.ict_ram);
+
+    .ict_ram :
+    {
+        . = ALIGN(4);
+        _sitcm = .;
+        *(.ict_ram)
+        *(.ict_ram*)
+        *(.RamFunc)
+        *(.RamFunc*)
+
+        . = ALIGN(4);
+        _eitcm = .;
+    } >ITCMRAM AT> FLASH
+
     /* The program code and other data goes into FLASH */
     .text :
     {
@@ -132,8 +147,6 @@ SECTIONS
         _sdata = .;        /* create a global symbol at data start */
         *(.data)           /* .data sections */
         *(.data*)          /* .data* sections */
-        *(.RamFunc)        /* .RamFunc sections */
-        *(.RamFunc*)       /* .RamFunc* sections */
 
         . = ALIGN(4);
         _edata = .;        /* define a global symbol at data end */

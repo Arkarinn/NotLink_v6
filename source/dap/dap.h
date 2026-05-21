@@ -245,6 +245,7 @@ typedef struct
     uint32_t clock_delay;   // Clock Delay
     uint32_t timestamp;     // 时间戳 Last captured Timestamp
     uint32_t gpio_mode;     // GPIO模式
+    uint32_t rx_data_remain;// 
     struct
     {                           // 传输配置 Transfer Configuration
         uint32_t idle_cycles;   // 传输后生成的空闲周期数(最大值255) Idle cycles after transfer

@@ -44,6 +44,7 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
     ITCMRAM (xrw)  : ORIGIN = 0x00000000, LENGTH = 64K
+    FLASH (rx)     : ORIGIN = 0x08000000, LENGTH = 128K
     DTCMRAM (rw)   : ORIGIN = 0x20000000, LENGTH = 128K
     RAM_D1 (xr)    : ORIGIN = 0x24000000, LENGTH = 512K
     RAM_D2 (rw)    : ORIGIN = 0x30000000, LENGTH = 128K
@@ -60,6 +61,21 @@ SECTIONS
         KEEP(*(.isr_vector)) /* Startup code 中断向量表 */
         . = ALIGN(4);
     } >RAM_D1
+
+    _siitcm = LOADADDR(.ict_ram);
+
+    .ict_ram :
+    {
+        . = ALIGN(4);
+        _sitcm = .;
+        *(.ict_ram)
+        *(.ict_ram*)
+        *(.RamFunc)
+        *(.RamFunc*)
+
+        . = ALIGN(4);
+        _eitcm = .;
+    } >ITCMRAM AT> RAM_D1
 
     /* The program code and other data goes into FLASH */
     .text :
@@ -131,18 +147,25 @@ SECTIONS
         _sdata = .;        /* create a global symbol at data start */
         *(.data)           /* .data sections */
         *(.data*)          /* .data* sections */
-        *(.RamFunc)        /* .RamFunc sections */
-        *(.RamFunc*)       /* .RamFunc* sections */
 
         . = ALIGN(4);
         _edata = .;        /* define a global symbol at data end */
     } >DTCMRAM AT> RAM_D1
+
+    .ram_d1 (NOLOAD) :
+    {
+        . = ALIGN(4);
+        *(.ram_d1)
+        *(.ram_d1*)
+    } >RAM_D1
 
     .ram_d2 (NOLOAD) :
     {
         . = ALIGN(4);
         *(.ram_d2)
         *(.ram_d2*)
+        *(.no_cache_ram)
+        *(.no_cache_ram*)
     } >RAM_D2
 
     /* Uninitialized data section */

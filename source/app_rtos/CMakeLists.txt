@@ -45,6 +45,11 @@ target_include_directories(${PROJECT_NAME}
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    "CONFIG_OPTIMIZE_TMS_HARD_OE"
+)
+
 # 添加链接脚本
 set_target_linker(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/scripts/ldscripts/STM32H750VBTX_APP_SPI.ld)
 
